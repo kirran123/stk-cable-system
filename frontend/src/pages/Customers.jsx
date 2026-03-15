@@ -14,6 +14,9 @@ export default function Customers() {
   // Inline Editing State
   const [inlineEdits, setInlineEdits] = useState({});
 
+  // Error States
+  const [saveError, setSaveError] = useState('');
+
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [searchCategory, setSearchCategory] = useState('name');
@@ -29,7 +32,7 @@ export default function Customers() {
 
   const fetchCustomers = () => {
     setLoading(true);
-    fetch('http://localhost:5000/api/customers')
+    fetch('https://stk-cable-system.onrender.com/api/customers')
       .then(res => res.json())
       .then(data => {
         setCustomers(data);
@@ -59,6 +62,7 @@ export default function Customers() {
       status: 'Active', totalAmount: 0, monthlyPayment: 0, paid: 'Not Paid'
     });
     setCurrentCustomer(null);
+    setSaveError(''); // clear any previous errors
     setShowModal(true);
   };
 
@@ -70,6 +74,7 @@ export default function Customers() {
     const customer = customers.find(c => c.id === selectedIds[0]);
     setFormData(customer);
     setCurrentCustomer(customer);
+    setSaveError(''); // clear any previous errors
     setShowModal(true);
   };
 
@@ -77,7 +82,7 @@ export default function Customers() {
     if (selectedIds.length === 0) return;
     if (window.confirm(`Are you sure you want to delete ${selectedIds.length} customer(s)?`)) {
       Promise.all(selectedIds.map(id =>
-        fetch(`http://localhost:5000/api/customers/${id}`, { method: 'DELETE' })
+        fetch(`https://stk-cable-system.onrender.com/api/customers/${id}`, { method: 'DELETE' })
       )).then(() => {
         setSelectedIds([]);
         fetchCustomers();
@@ -89,17 +94,26 @@ export default function Customers() {
     e.preventDefault();
     const method = currentCustomer ? 'PUT' : 'POST';
     const url = currentCustomer
-      ? `http://localhost:5000/api/customers/${currentCustomer.id}`
-      : 'http://localhost:5000/api/customers';
+      ? `https://stk-cable-system.onrender.com/api/customers/${currentCustomer.id}`
+      : 'https://stk-cable-system.onrender.com/api/customers';
 
     fetch(url, {
       method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(formData)
-    }).then(() => {
-      setShowModal(false);
-      fetchCustomers();
-    });
+    })
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to save to database. Is the backend running?');
+        return res.json();
+      })
+      .then(() => {
+        setShowModal(false);
+        fetchCustomers();
+      })
+      .catch(err => {
+        console.error('Error saving customer:', err);
+        setSaveError('Failed to connect to the backend server. Please verify it is running on Render.');
+      });
   };
 
   const exportToExcel = () => {
@@ -164,7 +178,7 @@ export default function Customers() {
     // Optimistically update UI
     setCustomers(customers.map(c => c.id === id ? { ...c, [field]: newValue } : c));
 
-    fetch(`http://localhost:5000/api/customers/${id}`, {
+    fetch(`https://stk-cable-system.onrender.com/api/customers/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ [field]: newValue })
@@ -188,7 +202,7 @@ export default function Customers() {
     const numValue = parseFloat(valString) || 0;
     setCustomers(customers.map(c => c.id === id ? { ...c, [field]: numValue } : c));
 
-    fetch(`http://localhost:5000/api/customers/${id}`, {
+    fetch(`https://stk-cable-system.onrender.com/api/customers/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ [field]: numValue })
@@ -209,7 +223,7 @@ export default function Customers() {
     setCurrentCustomer(customer);
     setCustomerHistory([]); // Clear past
     setLoading(true);
-    fetch(`http://localhost:5000/api/customers/${customer.id}/history`)
+    fetch(`https://stk-cable-system.onrender.com/api/customers/${customer.id}/history`)
       .then(r => r.json())
       .then(data => {
         setCustomerHistory(data);
@@ -226,7 +240,7 @@ export default function Customers() {
   const triggerMonthlyReset = () => {
     if (window.confirm("Are you sure you want to trigger the monthly reset? This will set all monthly payments to 0 and move current amounts to history.")) {
       setLoading(true);
-      fetch('http://localhost:5000/api/trigger-monthly-reset', {
+      fetch('https://stk-cable-system.onrender.com/api/trigger-monthly-reset', {
         method: 'POST'
       }).then(() => {
         fetchCustomers();
@@ -461,6 +475,11 @@ export default function Customers() {
               <button style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1.25rem' }} onClick={() => setShowModal(false)}>✕</button>
             </div>
             <form onSubmit={handleSave}>
+              {saveError && (
+                <div className="animate-enter" style={{ background: 'rgba(225, 29, 72, 0.2)', color: '#fb7185', border: '1px solid rgba(225, 29, 72, 0.5)', padding: '0.75rem', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.875rem' }}>
+                  ⚠️ {saveError}
+                </div>
+              )}
               <div className="input-group">
                 <label className="input-label">Customer Name</label>
                 <input className="input-field" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="Enter full name" />
