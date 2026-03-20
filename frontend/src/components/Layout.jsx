@@ -7,6 +7,10 @@ export default function Layout({ user, onLogout }) {
 
     const resetTimer = () => {
       clearTimeout(timeoutId);
+      
+      // Update last activity timestamp on every interaction
+      localStorage.setItem('lastActivity', Date.now().toString());
+
       // 5 minutes timeout
       timeoutId = setTimeout(() => {
         onLogout();

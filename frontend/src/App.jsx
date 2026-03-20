@@ -8,6 +8,16 @@ import Customers from './pages/Customers';
 function App() {
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem('user');
+    const lastActivity = localStorage.getItem('lastActivity');
+    
+    if (saved && lastActivity) {
+      if (Date.now() - parseInt(lastActivity, 10) > 5 * 60 * 1000) {
+        localStorage.removeItem('user');
+        localStorage.removeItem('lastActivity');
+        return null;
+      }
+      return JSON.parse(saved);
+    }
     return saved ? JSON.parse(saved) : null;
   });
 
@@ -21,10 +31,12 @@ function App() {
 
   const handleLogin = (userData) => {
     setUser(userData);
+    localStorage.setItem('lastActivity', Date.now().toString());
   };
 
   const handleLogout = () => {
     setUser(null);
+    localStorage.removeItem('lastActivity');
   };
 
   return (
