@@ -88,19 +88,42 @@ export const getCustomers = async () => {
       await sheet.setHeaderRow(['id', 'name', 'place', 'phone', 'boxNumber', 'provider', 'status', 'totalAmount', 'monthlyPayment', 'paid']);
     }
 
-    const rows = await sheet.getRows();
-    return rows.map(row => ({
-      id: row.get('id'),
-      name: row.get('name'),
-      place: row.get('place'),
-      phone: row.get('phone'),
-      boxNumber: row.get('boxNumber'),
-      provider: row.get('provider'),
-      status: row.get('status'),
-      totalAmount: parseFloat(row.get('totalAmount') || 0),
-      monthlyPayment: parseFloat(row.get('monthlyPayment') || 0),
-      paid: row.get('paid')
-    }));
+    // Fetch unformatted values to avoid commas and scientific notation losing precision
+    const response = await sheet._spreadsheet.sheetsApi.get(`values/${sheet.encodedA1SheetName}`, {
+      searchParams: {
+        valueRenderOption: 'UNFORMATTED_VALUE',
+      }
+    });
+
+    const data = await response.json();
+    if (!data.values || data.values.length <= 1) return [];
+
+    const headers = data.values[0];
+    const rawRows = data.values.slice(1);
+
+    return rawRows.map(rowRaw => {
+      // Helper to match row raw array back by header index correctly
+      const getVal = (key) => {
+        const idx = headers.indexOf(key);
+        if (idx === -1 || rowRaw[idx] === undefined || rowRaw[idx] === null) return '';
+        const val = rowRaw[idx];
+        // Ensure that everything becomes string unless floats are parsed later
+        return String(val).trim();
+      };
+
+      return {
+        id: getVal('id'),
+        name: getVal('name'),
+        place: getVal('place'),
+        phone: getVal('phone'),
+        boxNumber: getVal('boxNumber'),
+        provider: getVal('provider'),
+        status: getVal('status'),
+        totalAmount: parseFloat(getVal('totalAmount') || 0),
+        monthlyPayment: parseFloat(getVal('monthlyPayment') || 0),
+        paid: getVal('paid')
+      };
+    });
   } catch (error) {
     console.error('Error in getCustomers:', error);
     throw error;
@@ -193,13 +216,40 @@ export const updateCustomer = async (id, updateData) => {
 export const getCustomerHistory = async (id) => {
   try {
     const historySheet = await initHistorySheet();
-    const rows = await historySheet.getRows();
-    return rows
-      .filter(r => r.get('customerId') && r.get('customerId').toString() === id.toString())
-      .map(r => ({
-        date: r.get('date'),
-        amount: parseFloat(r.get('amount') || 0)
-      }));
+    const response = await historySheet._spreadsheet.sheetsApi.get(`values/${historySheet.encodedA1SheetName}`, {
+      searchParams: {
+        valueRenderOption: 'UNFORMATTED_VALUE',
+      }
+    });
+
+    const data = await response.json();
+    if (!data.values || data.values.length <= 1) return [];
+
+    const headers = data.values[0];
+    const customerIdIndex = headers.indexOf('customerId');
+    const dateIndex = headers.indexOf('date');
+    const amountIndex = headers.indexOf('amount');
+
+    const result = [];
+    for (let i = 1; i < data.values.length; i++) {
+       const rowRaw = data.values[i];
+       const rowCustomerId = rowRaw[customerIdIndex] !== undefined ? String(rowRaw[customerIdIndex]).trim() : '';
+       if (rowCustomerId === String(id)) {
+          const dateVal = rowRaw[dateIndex] !== undefined ? String(rowRaw[dateIndex]).trim() : '';
+          const amountVal = rowRaw[amountIndex] !== undefined ? parseFloat(rowRaw[amountIndex]) : 0;
+          
+          // Google Sheets might return date as serial number if it's stored as Date object.
+          // In the logHistoryEntry method, we log date as a string (YYYY-MM-DD), so it usually stays a string.
+          // But just to be safe: if dateVal is just a JS number representing days, we keep it as is,
+          // though typically it was pushed as a string `dateStr`.
+
+          result.push({
+             date: dateVal,
+             amount: isNaN(amountVal) ? 0 : amountVal
+          });
+       }
+    }
+    return result;
   } catch (e) {
     console.error("Error fetching history for customer", id, e);
     return [];
