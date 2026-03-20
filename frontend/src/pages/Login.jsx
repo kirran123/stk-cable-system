@@ -4,6 +4,7 @@ const ALLOWED_USERS = {
   sudhakar: 'sudhakar14',
   kishore: 'kishore14',
   kirran: 'kirran14',
+  cable: 'cable',
 };
 
 export default function Login({ onLogin }) {
@@ -14,7 +15,8 @@ export default function Login({ onLogin }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (ALLOWED_USERS[username] === password) {
-      onLogin({ username });
+      const role = username === 'cable' ? 'viewer' : 'admin';
+      onLogin({ username, role });
     } else {
       setError('Invalid username or password');
     }

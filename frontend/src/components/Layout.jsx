@@ -1,6 +1,36 @@
+import { useEffect } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 
 export default function Layout({ user, onLogout }) {
+  useEffect(() => {
+    let timeoutId;
+
+    const resetTimer = () => {
+      clearTimeout(timeoutId);
+      // 5 minutes timeout
+      timeoutId = setTimeout(() => {
+        onLogout();
+      }, 5 * 60 * 1000);
+    };
+
+    // Set up event listeners for user activity
+    window.addEventListener('mousemove', resetTimer);
+    window.addEventListener('keydown', resetTimer);
+    window.addEventListener('click', resetTimer);
+    window.addEventListener('touchstart', resetTimer);
+
+    // Initialize timer
+    resetTimer();
+
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('mousemove', resetTimer);
+      window.removeEventListener('keydown', resetTimer);
+      window.removeEventListener('click', resetTimer);
+      window.removeEventListener('touchstart', resetTimer);
+    };
+  }, [onLogout]);
+
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <header className="topbar">
@@ -39,7 +69,7 @@ export default function Layout({ user, onLogout }) {
       </header>
 
       <main style={{ padding: '2rem', flex: 1, overflowY: 'auto' }}>
-        <Outlet />
+        <Outlet context={{ user }} />
       </main>
     </div>
   );
