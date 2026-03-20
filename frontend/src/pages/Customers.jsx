@@ -505,13 +505,13 @@ export default function Customers() {
                 </div>
                 <div className="input-group">
                   <label className="input-label">Phone Number</label>
-                  <input className="input-field" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} placeholder="+1 (555) 000-0000" />
+                  <input type="text" className="input-field" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} placeholder="+1 (555) 000-0000" />
                 </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div className="input-group">
                   <label className="input-label">Box Number MAC/ID</label>
-                  <input className="input-field" value={formData.boxNumber} onChange={e => setFormData({ ...formData, boxNumber: e.target.value })} placeholder="BOX-XXXX" />
+                  <input type="text" className="input-field" value={formData.boxNumber} onChange={e => setFormData({ ...formData, boxNumber: e.target.value })} placeholder="BOX-XXXX" />
                 </div>
                 <div className="input-group">
                   <label className="input-label">Service Provider</label>
