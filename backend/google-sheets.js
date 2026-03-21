@@ -160,7 +160,7 @@ export const addCustomer = async (customerData) => {
       paid: customerData.paid || 'Not Paid'
     };
 
-    await sheet.addRow(newCustomer);
+    await sheet.addRow(newCustomer, { raw: true });
     return newCustomer;
   } catch (error) {
     console.error('Error in addCustomer:', error);
@@ -202,7 +202,7 @@ export const updateCustomer = async (id, updateData) => {
         }
       }
 
-      await row.save();
+      await row.save({ raw: true });
       return { id, ...updateData };
     }
     throw new Error('Customer not found');
@@ -296,7 +296,7 @@ export const executeMonthlyReset = async () => {
           paid: 'Not Paid'
         });
 
-        await row.save();
+        await row.save({ raw: true });
         // small delay to avoid rate limiting
         await new Promise(r => setTimeout(r, 200));
       }
