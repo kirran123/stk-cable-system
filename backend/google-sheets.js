@@ -240,11 +240,18 @@ export const getCustomerHistory = async (id) => {
           
           // Google Sheets might return date as serial number if it's stored as Date object.
           // In the logHistoryEntry method, we log date as a string (YYYY-MM-DD), so it usually stays a string.
-          // But just to be safe: if dateVal is just a JS number representing days, we keep it as is,
-          // though typically it was pushed as a string `dateStr`.
+          // But just to be safe: if dateVal is just a JS number representing days, we convert it to ISO string.
+          
+          let parsedDate = dateVal;
+          if (dateVal && !isNaN(dateVal) && String(dateVal).trim() !== '') {
+            const serialDate = parseFloat(dateVal);
+            // Google Sheets epoch is Dec 30, 1899
+            const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+            parsedDate = new Date(excelEpoch.getTime() + serialDate * 86400000).toISOString();
+          }
 
           result.push({
-             date: dateVal,
+             date: parsedDate,
              amount: isNaN(amountVal) ? 0 : amountVal
           });
        }
