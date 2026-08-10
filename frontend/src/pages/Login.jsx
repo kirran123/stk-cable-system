@@ -22,7 +22,6 @@ export default function Login({ onLogin }) {
   const [password, setPassword] = useState('');
   const [error, setError]       = useState('');
   const [chIdx, setChIdx]       = useState(0);
-  const [switching, setSwitching] = useState(false);
   const [sigBars, setSigBars]   = useState(4);
   const [time, setTime]         = useState('');
   const timerRef = useRef(null);
@@ -35,12 +34,9 @@ export default function Login({ onLogin }) {
     return () => clearInterval(id);
   }, []);
 
-  /* Channel cycling */
+  /* Channel cycling — smooth crossfade, no static */
   useEffect(() => {
-    const id = setInterval(() => {
-      setSwitching(true);
-      setTimeout(() => { setChIdx(i => (i + 1) % CHANNELS.length); setSwitching(false); }, 380);
-    }, 3000);
+    const id = setInterval(() => setChIdx(i => (i + 1) % CHANNELS.length), 3000);
     return () => clearInterval(id);
   }, []);
 
@@ -133,97 +129,87 @@ export default function Login({ onLogin }) {
             {/* Screen vignette */}
             <div style={s.vignette}/>
 
-            {switching ? (
-              /* Static flash */
-              <div style={s.staticWrap}>
-                {Array.from({length:72}).map((_,i)=>(
-                  <span key={i} style={{
-                    position:'absolute',
-                    left:`${(i*19+7)%100}%`, top:`${(i*13+11)%100}%`,
-                    width: i%3===0?6:3, height: i%4===0?4:2,
-                    background: i%2?'#fff':'#111', opacity:0.65,
-                  }}/>
-                ))}
-                <span style={s.staticLabel}>— SWITCHING CHANNEL —</span>
+            {/* Always-mounted screen content — channel badge fades smoothly */}
+            <div style={s.screenInner}>
+
+              {/* ── Top HUD bar ── */}
+              <div style={s.hud}>
+                <div
+                  key={chIdx}
+                  className="ch-fade"
+                  style={{ ...s.chPill, background: ch.color + '20', borderColor: ch.color + '60', color: ch.color }}
+                >
+                  ▶ CH {ch.num} · {ch.name}
+                </div>
+                <div style={s.hudRight}>
+                  <span style={s.liveTag} className="blink">● LIVE</span>
+                  <span style={s.clock}>{time}</span>
+                </div>
               </div>
-            ) : (
-              <div style={s.screenInner}>
 
-                {/* ── Top HUD bar ── */}
-                <div style={s.hud}>
-                  <div style={{ ...s.chPill, background: ch.color + '20', borderColor: ch.color + '60', color: ch.color }}>
-                    ▶ CH {ch.num} · {ch.name}
-                  </div>
-                  <div style={s.hudRight}>
-                    <span style={s.liveTag} className="blink">● LIVE</span>
-                    <span style={s.clock}>{time}</span>
-                  </div>
+              {/* ── Login form area ── */}
+              <div style={s.formArea}>
+                {/* Logo */}
+                <div style={s.logo}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="7" width="20" height="15" rx="2"/>
+                    <polyline points="17 2 12 7 7 2"/>
+                  </svg>
                 </div>
+                <h1 style={s.title}>STK Cable System</h1>
+                <p style={s.sub}>Network Management Portal</p>
 
-                {/* ── Login form area ── */}
-                <div style={s.formArea}>
-                  {/* Logo */}
-                  <div style={s.logo}>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="2" y="7" width="20" height="15" rx="2"/>
-                      <polyline points="17 2 12 7 7 2"/>
-                    </svg>
+                {error && <div style={s.err}>⚠ {error}</div>}
+
+                <form onSubmit={handleSubmit} onChange={resetTimer} style={{ width: '100%' }}>
+                  <div style={s.fg}>
+                    <label style={s.lbl}>Username</label>
+                    <input
+                      style={s.inp} type="text"
+                      value={username} onChange={e=>setUsername(e.target.value)}
+                      placeholder="Enter your username"
+                      required autoComplete="username"
+                      onFocus={e=>{e.target.style.borderColor='#6366f1';e.target.style.boxShadow='0 0 0 3px rgba(99,102,241,0.2)';}}
+                      onBlur={e =>{e.target.style.borderColor='rgba(255,255,255,0.12)';e.target.style.boxShadow='none';}}
+                    />
                   </div>
-                  <h1 style={s.title}>STK Cable System</h1>
-                  <p style={s.sub}>Network Management Portal</p>
-
-                  {error && <div style={s.err}>⚠ {error}</div>}
-
-                  <form onSubmit={handleSubmit} onChange={resetTimer} style={{ width: '100%' }}>
-                    <div style={s.fg}>
-                      <label style={s.lbl}>Username</label>
-                      <input
-                        style={s.inp} type="text"
-                        value={username} onChange={e=>setUsername(e.target.value)}
-                        placeholder="Enter your username"
-                        required autoComplete="username"
-                        onFocus={e=>{e.target.style.borderColor='#6366f1';e.target.style.boxShadow='0 0 0 3px rgba(99,102,241,0.2)';}}
-                        onBlur={e =>{e.target.style.borderColor='rgba(255,255,255,0.12)';e.target.style.boxShadow='none';}}
-                      />
-                    </div>
-                    <div style={{ ...s.fg, marginBottom:'1.2rem' }}>
-                      <label style={s.lbl}>Password</label>
-                      <input
-                        style={s.inp} type="password"
-                        value={password} onChange={e=>setPassword(e.target.value)}
-                        placeholder="••••••••"
-                        required autoComplete="current-password"
-                        onFocus={e=>{e.target.style.borderColor='#6366f1';e.target.style.boxShadow='0 0 0 3px rgba(99,102,241,0.2)';}}
-                        onBlur={e =>{e.target.style.borderColor='rgba(255,255,255,0.12)';e.target.style.boxShadow='none';}}
-                      />
-                    </div>
-                    <button type="submit" style={s.btn}
-                      onMouseEnter={e=>{ e.currentTarget.style.transform='translateY(-2px)'; e.currentTarget.style.boxShadow='0 10px 32px rgba(99,102,241,0.6)'; }}
-                      onMouseLeave={e=>{ e.currentTarget.style.transform='translateY(0)'; e.currentTarget.style.boxShadow='0 6px 20px rgba(99,102,241,0.4)'; }}
-                    >
-                      <span className="shimmer"/>
-                      📡 Connect to Network
-                    </button>
-                  </form>
-                </div>
-
-                {/* ── Bottom HUD bar ── */}
-                <div style={s.hudBot}>
-                  <div style={s.sigWrap}>
-                    {[1,2,3,4].map(b=>(
-                      <div key={b} style={{
-                        width:4, height:5+b*4, borderRadius:3,
-                        background: b<=sigBars ? '#10b981':'#1e293b',
-                        transition:'background 0.4s',
-                      }}/>
-                    ))}
-                    <span style={s.sigLabel}>SIGNAL</span>
+                  <div style={{ ...s.fg, marginBottom:'1.2rem' }}>
+                    <label style={s.lbl}>Password</label>
+                    <input
+                      style={s.inp} type="password"
+                      value={password} onChange={e=>setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required autoComplete="current-password"
+                      onFocus={e=>{e.target.style.borderColor='#6366f1';e.target.style.boxShadow='0 0 0 3px rgba(99,102,241,0.2)';}}
+                      onBlur={e =>{e.target.style.borderColor='rgba(255,255,255,0.12)';e.target.style.boxShadow='none';}}
+                    />
                   </div>
-                  <span style={s.copyright}>STK CABLE NETWORK © 2024</span>
-                </div>
-
+                  <button type="submit" style={s.btn}
+                    onMouseEnter={e=>{ e.currentTarget.style.transform='translateY(-2px)'; e.currentTarget.style.boxShadow='0 10px 32px rgba(99,102,241,0.6)'; }}
+                    onMouseLeave={e=>{ e.currentTarget.style.transform='translateY(0)'; e.currentTarget.style.boxShadow='0 6px 20px rgba(99,102,241,0.4)'; }}
+                  >
+                    <span className="shimmer"/>
+                    📡 Connect to Network
+                  </button>
+                </form>
               </div>
-            )}
+
+              {/* ── Bottom HUD bar ── */}
+              <div style={s.hudBot}>
+                <div style={s.sigWrap}>
+                  {[1,2,3,4].map(b=>(
+                    <div key={b} style={{
+                      width:4, height:5+b*4, borderRadius:3,
+                      background: b<=sigBars ? '#10b981':'#1e293b',
+                      transition:'background 0.4s',
+                    }}/>
+                  ))}
+                  <span style={s.sigLabel}>SIGNAL</span>
+                </div>
+                <span style={s.copyright}>STK CABLE NETWORK © 2024</span>
+              </div>
+
+            </div>
           </div>
 
           {/* ─ Bezel row ─ */}
@@ -422,17 +408,7 @@ const s = {
     fontSize: '0.6rem', color: '#1e293b', letterSpacing: '0.08em',
   },
 
-  /* Static */
-  staticWrap: {
-    position: 'absolute', inset: 0,
-    background: '#070c18',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-  },
-  staticLabel: {
-    position: 'relative', zIndex: 2,
-    fontSize: '0.62rem', color: 'rgba(255,255,255,0.25)',
-    letterSpacing: '0.18em', fontWeight: 600,
-  },
+
 
   /* Bezel */
   bezel: {
@@ -520,6 +496,15 @@ const CSS = `
   @keyframes crtSweep {
     from { top: -4px; }
     to   { top: 100%; }
+  }
+
+  /* Smooth channel badge crossfade */
+  .ch-fade {
+    animation: chFadeIn 0.55s cubic-bezier(0.4,0,0.2,1) both;
+  }
+  @keyframes chFadeIn {
+    from { opacity: 0; transform: translateY(-6px) scale(0.95); }
+    to   { opacity: 1; transform: translateY(0)    scale(1);    }
   }
 
   /* Blink */
