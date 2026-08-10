@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 /* ══════════════════════════════════════════
-   BALANCED DESIGN SYSTEM (NEAT & PROFESSIONAL)
+   BALANCED DESIGN SYSTEM
 ══════════════════════════════════════════ */
 :root {
   --primary:        #6366f1;
@@ -48,11 +48,23 @@ html, body {
   background-attachment: fixed;
 }
 
-/* Scrollbar */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 99px; }
-::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+/* HIGHLY VISIBLE SCROLLBARS (PROMINENT THUMB) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 10px; /* Horizontal scrollbar thickness */
+}
+::-webkit-scrollbar-track {
+  background: rgba(10, 15, 26, 0.8);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb {
+  background: #6366f1; /* Vibrant Purple Thumb */
+  border-radius: 99px;
+  border: 2px solid #131a2b;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #818cf8;
+}
 
 .text-gradient {
   background: linear-gradient(135deg, #818cf8 0%, #c084fc 50%, #f472b6 100%);
@@ -272,7 +284,7 @@ html, body {
 .provider-stat-line:last-child { border-bottom: none; }
 
 /* ══════════════════════════════════════════
-   CUSTOMER DIRECTORY & FIXED HORIZONTAL SCROLLBAR TABLE
+   CUSTOMER DIRECTORY & GUARANTEED SCROLLBAR
 ══════════════════════════════════════════ */
 .toolbar-neat {
   display: flex; align-items: center; gap: 0.75rem;
@@ -290,21 +302,26 @@ html, body {
   background: var(--surface-solid);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  overflow: hidden;
   box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
 }
 
-/* Fixed Table Container: Vertical & Horizontal Scrollbars are ALWAYS VISIBLE right inside the viewport */
+/* Force horizontal scrollbar always visible directly underneath the table header */
 .table-wrapper-scrollable {
-  overflow-x: auto;
+  overflow-x: scroll !important;
   overflow-y: auto;
   max-height: calc(100vh - 210px);
-  position: relative;
+  width: 100%;
 }
 
-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+table {
+  width: 100%;
+  min-width: 1250px; /* Guarantees table width triggers visible horizontal scrollbar */
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
 thead { position: sticky; top: 0; z-index: 20; background: #0f1626; }
 th {
   color: var(--text-muted); font-size: 0.75rem; font-weight: 700;
@@ -391,9 +408,7 @@ tbody tr.selected-row { background: rgba(99,102,241,0.1); }
 }
 option { background: var(--surface-solid); color: var(--text); }
 
-/* ══════════════════════════════════════════
-   LOGIN PAGE
-══════════════════════════════════════════ */
+/* LOGIN PAGE */
 .login-root-neat {
   min-height: 100vh;
   display: flex;
