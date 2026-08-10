@@ -18,40 +18,66 @@ export default function Login({ onLogin }) {
       const role = username === 'cable' ? 'viewer' : 'admin';
       onLogin({ username, role });
     } else {
-      setError('Invalid username or password');
+      setError('Invalid username or password. Please check your credentials.');
     }
   };
 
   return (
-    <div className="login-wrapper">
-      {/* Massive Left Side Animation */}
-      <div className="side-animation left-side">
-        <div className="floating-shape shape-1"></div>
-        <div className="floating-shape shape-3"></div>
-        <div className="cable-line line-1"></div>
-        <div className="cable-line line-2"></div>
-      </div>
+    <div className="login-root">
+      {/* Left Branding Side */}
+      <div className="login-left">
+        <div className="login-orb orb-1"></div>
+        <div className="login-orb orb-2"></div>
+        <div className="login-orb orb-3"></div>
 
-      <div className="login-form-container">
-        <div className="glass-panel stagger-1 login-panel">
-          <div className="hero-logo-container stagger-2" style={{ margin: '0 auto 1.5rem' }}>
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <div className="login-left-content">
+          <div className="login-big-icon">
+            <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <rect x="2" y="7" width="20" height="15" rx="2" ry="2"></rect>
               <polyline points="17 2 12 7 7 2"></polyline>
             </svg>
           </div>
-          <h2 style={{ marginBottom: '0.5rem', fontSize: '2rem', textAlign: 'center' }} className="text-gradient">STK Cable</h2>
-          <p style={{ color: 'var(--text-muted)', marginBottom: '2.5rem', fontSize: '0.95rem', textAlign: 'center' }}>
-            Premium Network Management
+
+          <h1 className="login-hero-title">
+            STK Cable <br />
+            <span className="text-gradient">System</span>
+          </h1>
+
+          <p className="login-hero-sub">
+            Enterprise cable network management with instant Google Sheets & Convex cloud database synchronization.
           </p>
-          
+
+          <div className="login-feature">
+            <div className="login-feature-dot" />
+            <span>Multi-month payment calculation & reset tracking</span>
+          </div>
+          <div className="login-feature">
+            <div className="login-feature-dot" />
+            <span>Dual cloud sync for high availability & reliability</span>
+          </div>
+          <div className="login-feature">
+            <div className="login-feature-dot" />
+            <span>Comprehensive payment history audit log</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Right Login Form */}
+      <div className="login-right">
+        <div className="login-form-box">
+          <div className="login-form-header">
+            <h2 className="login-form-title">Welcome back</h2>
+            <p className="login-form-sub">Sign in to access your STK Cable portal</p>
+          </div>
+
           {error && (
-            <div className="animate-enter" style={{ background: 'rgba(225, 29, 72, 0.2)', color: '#fb7185', border: '1px solid rgba(225, 29, 72, 0.5)', padding: '0.75rem', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.875rem' }}>
-              {error}
+            <div className="error-box">
+              <span>⚠️</span>
+              <span>{error}</span>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} style={{ textAlign: 'left' }} className="stagger-3">
+          <form onSubmit={handleSubmit}>
             <div className="input-group">
               <label className="input-label" htmlFor="username">Username</label>
               <input
@@ -60,11 +86,13 @@ export default function Login({ onLogin }) {
                 className="input-field"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter Name"
+                placeholder="Enter your username"
                 required
+                autoComplete="username"
               />
             </div>
-            <div className="input-group" style={{ marginBottom: '2.5rem' }}>
+
+            <div className="input-group" style={{ marginBottom: '2rem' }}>
               <label className="input-label" htmlFor="password">Password</label>
               <input
                 id="password"
@@ -74,21 +102,16 @@ export default function Login({ onLogin }) {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
+                autoComplete="current-password"
               />
             </div>
-            <button type="submit" className="btn btn-primary stagger-4" style={{ width: '100%', padding: '0.85rem', fontSize: '1rem', animationDelay: '0.5s' }}>
-              Sign In to Dashboard
+
+            <button type="submit" className="login-btn">
+              <span className="login-btn-shimmer" />
+              Sign In to Dashboard →
             </button>
           </form>
         </div>
-      </div>
-
-      {/* Massive Right Side Animation */}
-      <div className="side-animation right-side">
-        <div className="floating-shape shape-2"></div>
-        <div className="floating-shape shape-4"></div>
-        <div className="cable-line line-3"></div>
-        <div className="cable-line line-4"></div>
       </div>
     </div>
   );

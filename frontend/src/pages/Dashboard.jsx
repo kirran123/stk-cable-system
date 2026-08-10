@@ -21,8 +21,9 @@ export default function Dashboard() {
   }, []);
 
   if (loading) return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
-      <div style={{ width: '40px', height: '40px', border: '4px solid rgba(255,255,255,0.1)', borderTopColor: 'var(--primary-light)', borderRadius: '50%', animation: 'rotateBg 1s linear infinite' }}></div>
+    <div className="spinner-wrap">
+      <div className="spinner"></div>
+      <div className="spinner-text">Loading dashboard metrics...</div>
     </div>
   );
 
@@ -42,16 +43,16 @@ export default function Dashboard() {
 
   const chartData = [
     {
-      name: 'TCCL',
+      name: 'TCCL Provider',
       Active: tcclStats.active,
-      Deactive: tcclStats.deactive,
+      Inactive: tcclStats.deactive,
       Paid: tcclStats.paid,
       Unpaid: tcclStats.unpaid,
     },
     {
-      name: 'GPTL',
+      name: 'GPTL Provider',
       Active: gptlStats.active,
-      Deactive: gptlStats.deactive,
+      Inactive: gptlStats.deactive,
       Paid: gptlStats.paid,
       Unpaid: gptlStats.unpaid,
     }
@@ -59,73 +60,155 @@ export default function Dashboard() {
 
   const totalActive = tcclStats.active + gptlStats.active;
   const totalBoxes = customers.length;
+  const totalPaid = tcclStats.paid + gptlStats.paid;
+  const totalUnpaid = tcclStats.unpaid + gptlStats.unpaid;
 
   return (
-    <div className="animate-enter">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h2>Dashboard Overview</h2>
-        <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Updated live</span>
-      </div>
-      
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
-        <div className="glass-panel hover-effect stagger-1" style={{ padding: '1.5rem', borderLeft: '4px solid #818cf8' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <h4 style={{ color: 'var(--text-muted)', margin: 0, fontWeight: 500 }}>Total Boxes</h4>
-            <div style={{ padding: '0.4rem', background: 'rgba(129, 140, 248, 0.1)', borderRadius: '8px', color: '#818cf8' }}><span className="icon-bounce">📦</span></div>
-          </div>
-          <h2 style={{ fontSize: '2.5rem', margin: '0', display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
-            {totalBoxes}
-            <span style={{ fontSize: '0.875rem', color: '#10b981', fontWeight: '500' }}>+</span>
-          </h2>
+    <div>
+      <div className="page-header">
+        <div className="page-header-left">
+          <h2>Network Dashboard Overview</h2>
+          <p>Real-time analytics across TCCL & GPTL cable subscribers</p>
         </div>
-        
-        <div className="glass-panel hover-effect stagger-2" style={{ padding: '1.5rem', borderLeft: '4px solid var(--accent)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <h4 style={{ color: 'var(--text-muted)', margin: 0, fontWeight: 500 }}>Total Active</h4>
-            <div style={{ padding: '0.4rem', background: 'rgba(6, 182, 212, 0.1)', borderRadius: '8px', color: 'var(--accent)' }}><span className="icon-bounce">🟢</span></div>
-          </div>
-          <h2 style={{ fontSize: '2.5rem', margin: '0' }}>{totalActive}</h2>
-        </div>
-        
-        <div className="glass-panel hover-effect stagger-3" style={{ padding: '1.5rem', borderLeft: '4px solid #34d399' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <h4 style={{ color: 'var(--text-muted)', margin: 0, fontWeight: 500 }}>Total Paid</h4>
-            <div style={{ padding: '0.4rem', background: 'rgba(52, 211, 153, 0.1)', borderRadius: '8px', color: '#34d399' }}><span className="icon-bounce">💸</span></div>
-          </div>
-          <h2 style={{ fontSize: '2.5rem', margin: '0' }}>{tcclStats.paid + gptlStats.paid}</h2>
-        </div>
-        
-        <div className="glass-panel hover-effect stagger-4" style={{ padding: '1.5rem', borderLeft: '4px solid #fb7185' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <h4 style={{ color: 'var(--text-muted)', margin: 0, fontWeight: 500 }}>Total Unpaid</h4>
-             <div style={{ padding: '0.4rem', background: 'rgba(251, 113, 133, 0.1)', borderRadius: '8px', color: '#fb7185' }}><span className="icon-bounce">⚠️</span></div>
-          </div>
-          <h2 style={{ fontSize: '2.5rem', margin: '0' }}>{tcclStats.unpaid + gptlStats.unpaid}</h2>
+        <div className="page-header-actions">
+          <button className="btn btn-ghost btn-sm" onClick={() => window.location.reload()}>
+            🔄 Refresh Data
+          </button>
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem' }}>
-        <div className="glass-panel stagger-1 hover-effect" style={{ padding: '1.5rem', animationDelay: '0.5s' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}>
-             <h3 style={{ margin: 0 }}>Provider Statistics</h3>
+      {/* Main KPI Stat Cards */}
+      <div className="stats-grid">
+        <div className="stat-card stat-card-purple stagger-1">
+          <div className="stat-header">
+            <span className="stat-label">Total Connections</span>
+            <div className="stat-icon stat-icon-purple">📦</div>
           </div>
-          <div style={{ width: '100%', height: 400 }}>
-            <ResponsiveContainer>
-              <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                <XAxis dataKey="name" stroke="var(--text-muted)" />
-                <YAxis stroke="var(--text-muted)" />
-                <Tooltip 
-                  cursor={{fill: 'rgba(255,255,255,0.05)'}} 
-                  contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff' }}
-                />
-                <Legend wrapperStyle={{ paddingTop: '20px' }} />
-                <Bar dataKey="Active" fill="var(--primary-light)" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Deactive" fill="var(--text-muted)" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Paid" fill="#10b981" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Unpaid" fill="var(--secondary)" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="stat-value text-gradient">{totalBoxes}</div>
+          <div className="stat-sub">
+            <span>Total registered setup boxes</span>
           </div>
+        </div>
+
+        <div className="stat-card stat-card-cyan stagger-2">
+          <div className="stat-header">
+            <span className="stat-label">Active Subscribers</span>
+            <div className="stat-icon stat-icon-cyan">⚡</div>
+          </div>
+          <div className="stat-value">{totalActive}</div>
+          <div className="stat-sub">
+            <span style={{ color: '#34d399' }}>{totalBoxes > 0 ? Math.round((totalActive / totalBoxes) * 100) : 0}%</span> of total network
+          </div>
+        </div>
+
+        <div className="stat-card stat-card-green stagger-3">
+          <div className="stat-header">
+            <span className="stat-label">Paid Subscriptions</span>
+            <div className="stat-icon stat-icon-green">✅</div>
+          </div>
+          <div className="stat-value" style={{ color: '#34d399' }}>{totalPaid}</div>
+          <div className="stat-sub">
+            <span>Current month cleared</span>
+          </div>
+        </div>
+
+        <div className="stat-card stat-card-pink stagger-4">
+          <div className="stat-header">
+            <span className="stat-label">Pending Payments</span>
+            <div className="stat-icon stat-icon-pink">⏳</div>
+          </div>
+          <div className="stat-value" style={{ color: '#f87171' }}>{totalUnpaid}</div>
+          <div className="stat-sub">
+            <span>Awaiting collection</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Provider Breakdown Cards */}
+      <div className="section-title stagger-5">
+        <div className="section-title-bar"></div>
+        <span>Provider Breakdown</span>
+      </div>
+
+      <div className="provider-grid stagger-5">
+        {/* TCCL Card */}
+        <div className="provider-card">
+          <div className="provider-card-title">
+            <span className="provider-dot" style={{ background: 'var(--primary-light)' }}></span>
+            <span>TCCL Service Provider</span>
+            <span className="tag" style={{ marginLeft: 'auto' }}>{tcclStats.active + tcclStats.deactive} Boxes</span>
+          </div>
+
+          <div className="provider-stat-row">
+            <span className="text-dim">Active Connections</span>
+            <span className="provider-stat-val" style={{ color: 'var(--primary-light)' }}>{tcclStats.active}</span>
+          </div>
+          <div className="provider-stat-row">
+            <span className="text-dim">Inactive Connections</span>
+            <span className="provider-stat-val text-muted">{tcclStats.deactive}</span>
+          </div>
+          <div className="provider-stat-row">
+            <span className="text-dim">Paid Status</span>
+            <span className="provider-stat-val" style={{ color: '#34d399' }}>{tcclStats.paid}</span>
+          </div>
+          <div className="provider-stat-row">
+            <span className="text-dim">Unpaid Status</span>
+            <span className="provider-stat-val" style={{ color: '#f87171' }}>{tcclStats.unpaid}</span>
+          </div>
+        </div>
+
+        {/* GPTL Card */}
+        <div className="provider-card">
+          <div className="provider-card-title">
+            <span className="provider-dot" style={{ background: 'var(--accent)' }}></span>
+            <span>GPTL Service Provider</span>
+            <span className="tag" style={{ marginLeft: 'auto' }}>{gptlStats.active + gptlStats.deactive} Boxes</span>
+          </div>
+
+          <div className="provider-stat-row">
+            <span className="text-dim">Active Connections</span>
+            <span className="provider-stat-val" style={{ color: 'var(--accent)' }}>{gptlStats.active}</span>
+          </div>
+          <div className="provider-stat-row">
+            <span className="text-dim">Inactive Connections</span>
+            <span className="provider-stat-val text-muted">{gptlStats.deactive}</span>
+          </div>
+          <div className="provider-stat-row">
+            <span className="text-dim">Paid Status</span>
+            <span className="provider-stat-val" style={{ color: '#34d399' }}>{gptlStats.paid}</span>
+          </div>
+          <div className="provider-stat-row">
+            <span className="text-dim">Unpaid Status</span>
+            <span className="provider-stat-val" style={{ color: '#f87171' }}>{gptlStats.unpaid}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Chart Section */}
+      <div className="chart-card stagger-5">
+        <div className="chart-title">Visual Analytics Comparison</div>
+        <div className="chart-sub">Comparing Active vs Inactive & Paid vs Unpaid status per Provider</div>
+        <div style={{ width: '100%', height: 350 }}>
+          <ResponsiveContainer>
+            <BarChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+              <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={12} tickLine={false} />
+              <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} />
+              <Tooltip
+                cursor={{ fill: 'rgba(255,255,255,0.03)' }}
+                contentStyle={{
+                  backgroundColor: '#111827',
+                  border: '1px solid var(--border)',
+                  borderRadius: '12px',
+                  boxShadow: 'var(--shadow-lg)'
+                }}
+              />
+              <Legend wrapperStyle={{ paddingTop: '15px' }} />
+              <Bar dataKey="Active" fill="var(--primary-light)" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="Inactive" fill="#475569" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="Paid" fill="#10b981" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="Unpaid" fill="#ef4444" radius={[6, 6, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </div>
     </div>
