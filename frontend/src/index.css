@@ -19,7 +19,6 @@
   --surface-hover:  rgba(40, 53, 76, 0.6);
   --surface-solid:  #131a2b;
   --border:         rgba(255, 255, 255, 0.08);
-  --border-bright:  rgba(99, 102, 241, 0.4);
 
   --text:           #f8fafc;
   --text-muted:     #64748b;
@@ -35,7 +34,6 @@
   --shadow-sm:   0 4px 12px rgba(0,0,0,0.25);
   --shadow-md:   0 8px 24px rgba(0,0,0,0.35);
   --shadow-lg:   0 16px 40px rgba(0,0,0,0.5);
-  --shadow-glow: 0 0 25px rgba(99,102,241,0.25);
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -53,7 +51,7 @@ html, body {
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 99px; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 99px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
 
 .text-gradient {
@@ -62,7 +60,7 @@ html, body {
 }
 
 /* ══════════════════════════════════════════
-   APP LAYOUT (COMFORTABLE & RESPONSIVE)
+   APP LAYOUT
 ══════════════════════════════════════════ */
 .app-shell {
   display: flex;
@@ -174,13 +172,10 @@ html, body {
 .topbar-title { font-size: 1.2rem; font-weight: 700; }
 
 .page-content {
-  padding: 1.75rem 2rem;
+  padding: 1.5rem 2rem;
   flex: 1;
-  animation: pageFadeIn 0.35s ease-out;
-}
-@keyframes pageFadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
+  display: flex;
+  flex-direction: column;
 }
 
 /* ══════════════════════════════════════════
@@ -190,7 +185,7 @@ html, body {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 1.25rem;
-  margin-bottom: 1.75rem;
+  margin-bottom: 1.5rem;
 }
 
 .stat-card-neat {
@@ -277,7 +272,7 @@ html, body {
 .provider-stat-line:last-child { border-bottom: none; }
 
 /* ══════════════════════════════════════════
-   CUSTOMER DIRECTORY & TOOLBAR
+   CUSTOMER DIRECTORY & FIXED HORIZONTAL SCROLLBAR TABLE
 ══════════════════════════════════════════ */
 .toolbar-neat {
   display: flex; align-items: center; gap: 0.75rem;
@@ -288,6 +283,7 @@ html, body {
   border-radius: var(--radius-lg);
   margin-bottom: 1.25rem;
   box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
 }
 
 .table-panel-neat {
@@ -296,18 +292,27 @@ html, body {
   border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
 }
 
-.table-wrapper { overflow-x: auto; }
+/* Fixed Table Container: Vertical & Horizontal Scrollbars are ALWAYS VISIBLE right inside the viewport */
+.table-wrapper-scrollable {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: calc(100vh - 210px);
+  position: relative;
+}
 
 table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
-thead { background: #0f1626; }
+thead { position: sticky; top: 0; z-index: 20; background: #0f1626; }
 th {
   color: var(--text-muted); font-size: 0.75rem; font-weight: 700;
   text-transform: uppercase; letter-spacing: 0.05em;
   padding: 0.9rem 1rem; text-align: left;
   border-bottom: 1px solid var(--border);
   white-space: nowrap;
+  background: #0f1626;
 }
 td {
   padding: 0.85rem 1rem;
@@ -387,7 +392,7 @@ tbody tr.selected-row { background: rgba(99,102,241,0.1); }
 option { background: var(--surface-solid); color: var(--text); }
 
 /* ══════════════════════════════════════════
-   LOGIN PAGE (NEAT & PROFESSIONAL)
+   LOGIN PAGE
 ══════════════════════════════════════════ */
 .login-root-neat {
   min-height: 100vh;
@@ -431,9 +436,7 @@ option { background: var(--surface-solid); color: var(--text); }
 .login-title { font-size: 1.75rem; font-weight: 800; text-align: center; margin-bottom: 0.35rem; }
 .login-sub   { font-size: 0.875rem; color: var(--text-muted); text-align: center; margin-bottom: 2rem; }
 
-/* ══════════════════════════════════════════
-   MODAL OVERLAY
-══════════════════════════════════════════ */
+/* MODAL OVERLAY */
 .modal-overlay {
   position: fixed; inset: 0; z-index: 200;
   background: rgba(0,0,0,0.65); backdrop-filter: blur(8px);

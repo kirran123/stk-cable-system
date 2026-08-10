@@ -282,7 +282,7 @@ export default function Customers() {
             Loading subscriber directory...
           </div>
         ) : (
-          <div className="table-wrapper">
+          <div className="table-wrapper-scrollable">
             <table>
               <thead>
                 <tr>
