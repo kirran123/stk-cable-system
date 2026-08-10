@@ -533,4 +533,34 @@ const CSS = `
     from { stroke-dashoffset: 0; }
     to   { stroke-dashoffset: -70; }
   }
+
+  /* 📱 MOBILE RESPONSIVE SCALING FOR TV LOGIN 📱 */
+  @media (max-width: 520px) {
+    div[style*="width: 480px"] {
+      width: 92vw !important;
+      padding: 10px 10px 8px !important;
+    }
+    div[style*="height: 460px"] {
+      height: auto !important;
+      min-height: 400px !important;
+    }
+    div[style*="padding: 1rem 2.5rem"] {
+      padding: 0.75rem 1.25rem !important;
+    }
+    div[style*="width: 380px"] {
+      width: 80vw !important;
+    }
+  }
+  @media (max-width: 380px) {
+    div[style*="width: 480px"] {
+      width: 96vw !important;
+      padding: 8px 6px !important;
+    }
+    div[style*="padding: 1rem 2.5rem"] {
+      padding: 0.5rem 0.85rem !important;
+    }
+    h1[style*="font-size: 1.3rem"] {
+      font-size: 1.1rem !important;
+    }
+  }
 `;
