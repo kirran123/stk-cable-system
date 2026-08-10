@@ -18,8 +18,8 @@ export default function Dashboard() {
   }, []);
 
   if (loading) return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)' }}>
-      Loading analytics...
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '50vh', color: 'var(--text-muted)' }}>
+      Loading analytics data...
     </div>
   );
 
@@ -37,8 +37,8 @@ export default function Dashboard() {
   const gptlStats = getStats('gptl');
 
   const chartData = [
-    { name: 'TCCL', Active: tcclStats.active, Inactive: tcclStats.deactive, Paid: tcclStats.paid, Unpaid: tcclStats.unpaid },
-    { name: 'GPTL', Active: gptlStats.active, Inactive: gptlStats.deactive, Paid: gptlStats.paid, Unpaid: gptlStats.unpaid }
+    { name: 'TCCL Provider', Active: tcclStats.active, Inactive: tcclStats.deactive, Paid: tcclStats.paid, Unpaid: tcclStats.unpaid },
+    { name: 'GPTL Provider', Active: gptlStats.active, Inactive: gptlStats.deactive, Paid: gptlStats.paid, Unpaid: gptlStats.unpaid }
   ];
 
   const totalActive = tcclStats.active + gptlStats.active;
@@ -47,78 +47,96 @@ export default function Dashboard() {
   const totalUnpaid = tcclStats.unpaid + gptlStats.unpaid;
 
   return (
-    <div className="dashboard-container">
-      {/* 4 Compact Stat Cards */}
-      <div className="stats-grid-compact">
-        <div className="stat-card-compact stat-card-purple">
-          <span className="stat-label-compact">Total Boxes</span>
-          <div className="stat-val-compact text-gradient">{totalBoxes}</div>
-          <span className="stat-sub-compact">Registered subscribers</span>
+    <div>
+      {/* 4 Stat Cards */}
+      <div className="stats-grid-dashboard">
+        <div className="stat-card-neat stat-card-purple">
+          <div className="stat-card-header">
+            <span className="stat-card-title">Total Connections</span>
+            <div className="stat-card-icon icon-purple">📦</div>
+          </div>
+          <div className="stat-card-val text-gradient">{totalBoxes}</div>
+          <div className="stat-card-sub">Registered setup box accounts</div>
         </div>
-        <div className="stat-card-compact stat-card-cyan">
-          <span className="stat-label-compact">Active</span>
-          <div className="stat-val-compact">{totalActive}</div>
-          <span className="stat-sub-compact">{totalBoxes > 0 ? Math.round((totalActive / totalBoxes) * 100) : 0}% active rate</span>
+
+        <div className="stat-card-neat stat-card-cyan">
+          <div className="stat-card-header">
+            <span className="stat-card-title">Active Subscribers</span>
+            <div className="stat-card-icon icon-cyan">⚡</div>
+          </div>
+          <div className="stat-card-val">{totalActive}</div>
+          <div className="stat-card-sub"><span style={{ color: '#34d399', fontWeight: 600 }}>{totalBoxes > 0 ? Math.round((totalActive / totalBoxes) * 100) : 0}%</span> network active rate</div>
         </div>
-        <div className="stat-card-compact stat-card-green">
-          <span className="stat-label-compact">Paid</span>
-          <div className="stat-val-compact" style={{ color: '#34d399' }}>{totalPaid}</div>
-          <span className="stat-sub-compact">Current month cleared</span>
+
+        <div className="stat-card-neat stat-card-green">
+          <div className="stat-card-header">
+            <span className="stat-card-title">Paid Accounts</span>
+            <div className="stat-card-icon icon-green">✅</div>
+          </div>
+          <div className="stat-card-val" style={{ color: '#34d399' }}>{totalPaid}</div>
+          <div className="stat-card-sub">Current month cleared</div>
         </div>
-        <div className="stat-card-compact stat-card-pink">
-          <span className="stat-label-compact">Unpaid</span>
-          <div className="stat-val-compact" style={{ color: '#f87171' }}>{totalUnpaid}</div>
-          <span className="stat-sub-compact">Pending collection</span>
+
+        <div className="stat-card-neat stat-card-pink">
+          <div className="stat-card-header">
+            <span className="stat-card-title">Pending Unpaid</span>
+            <div className="stat-card-icon icon-pink">⏳</div>
+          </div>
+          <div className="stat-card-val" style={{ color: '#f87171' }}>{totalUnpaid}</div>
+          <div className="stat-card-sub">Awaiting fee collection</div>
         </div>
       </div>
 
-      {/* Bottom Row Grid */}
-      <div className="dashboard-bottom-grid">
-        <div className="provider-section">
-          {/* TCCL Box */}
-          <div className="provider-box">
-            <div className="provider-box-header">
+      {/* Two Column Grid */}
+      <div className="dashboard-grid-two">
+        {/* Provider Breakdown Box */}
+        <div className="card-panel">
+          <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1.25rem' }}>Service Providers</h3>
+          
+          {/* TCCL */}
+          <div className="provider-box-item">
+            <div className="provider-header">
               <span style={{ color: 'var(--primary-light)' }}>● TCCL Provider</span>
               <span className="badge badge-tccl">{tcclStats.active + tcclStats.deactive} Boxes</span>
             </div>
-            <div className="provider-row"><span>Active</span><strong style={{ color: 'var(--primary-light)' }}>{tcclStats.active}</strong></div>
-            <div className="provider-row"><span>Inactive</span><span>{tcclStats.deactive}</span></div>
-            <div className="provider-row"><span>Paid</span><strong style={{ color: '#34d399' }}>{tcclStats.paid}</strong></div>
-            <div className="provider-row"><span>Unpaid</span><strong style={{ color: '#f87171' }}>{tcclStats.unpaid}</strong></div>
+            <div className="provider-stat-line"><span>Active Connections</span><strong style={{ color: 'var(--primary-light)' }}>{tcclStats.active}</strong></div>
+            <div className="provider-stat-line"><span>Inactive Connections</span><span>{tcclStats.deactive}</span></div>
+            <div className="provider-stat-line"><span>Paid Status</span><strong style={{ color: '#34d399' }}>{tcclStats.paid}</strong></div>
+            <div className="provider-stat-line"><span>Unpaid Status</span><strong style={{ color: '#f87171' }}>{tcclStats.unpaid}</strong></div>
           </div>
 
-          {/* GPTL Box */}
-          <div className="provider-box">
-            <div className="provider-box-header">
+          {/* GPTL */}
+          <div className="provider-box-item">
+            <div className="provider-header">
               <span style={{ color: 'var(--accent)' }}>● GPTL Provider</span>
               <span className="badge badge-gptl">{gptlStats.active + gptlStats.deactive} Boxes</span>
             </div>
-            <div className="provider-row"><span>Active</span><strong style={{ color: 'var(--accent)' }}>{gptlStats.active}</strong></div>
-            <div className="provider-row"><span>Inactive</span><span>{gptlStats.deactive}</span></div>
-            <div className="provider-row"><span>Paid</span><strong style={{ color: '#34d399' }}>{gptlStats.paid}</strong></div>
-            <div className="provider-row"><span>Unpaid</span><strong style={{ color: '#f87171' }}>{gptlStats.unpaid}</strong></div>
+            <div className="provider-stat-line"><span>Active Connections</span><strong style={{ color: 'var(--accent)' }}>{gptlStats.active}</strong></div>
+            <div className="provider-stat-line"><span>Inactive Connections</span><span>{gptlStats.deactive}</span></div>
+            <div className="provider-stat-line"><span>Paid Status</span><strong style={{ color: '#34d399' }}>{gptlStats.paid}</strong></div>
+            <div className="provider-stat-line"><span>Unpaid Status</span><strong style={{ color: '#f87171' }}>{gptlStats.unpaid}</strong></div>
           </div>
         </div>
 
-        {/* Chart Box */}
-        <div className="chart-box">
-          <div style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.5rem', color: 'var(--text-muted)' }}>
-            PROVIDER COMPARISON
-          </div>
-          <div style={{ flex: 1, minHeight: 0, width: '100%' }}>
+        {/* Analytics Chart Panel */}
+        <div className="card-panel" style={{ display: 'flex', flexDirection: 'column' }}>
+          <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.35rem' }}>Visual Analytics Comparison</h3>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>Distribution of active, inactive, paid and unpaid statuses per provider</p>
+          
+          <div style={{ width: '100%', height: 320, flex: 1 }}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 10, right: 20, left: -20, bottom: 0 }}>
-                <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={11} tickLine={false} />
-                <YAxis stroke="var(--text-muted)" fontSize={11} tickLine={false} />
+              <BarChart data={chartData} margin={{ top: 15, right: 25, left: -10, bottom: 5 }}>
+                <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={12} tickLine={false} />
+                <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} />
                 <Tooltip
                   cursor={{ fill: 'rgba(255,255,255,0.03)' }}
-                  contentStyle={{ backgroundColor: '#0e1424', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '12px' }}
+                  contentStyle={{ backgroundColor: '#131a2b', border: '1px solid var(--border)', borderRadius: '10px', fontSize: '12px' }}
                 />
-                <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '5px' }} />
-                <Bar dataKey="Active" fill="var(--primary-light)" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Inactive" fill="#475569" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Paid" fill="#10b981" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Unpaid" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
+                <Bar dataKey="Active" fill="var(--primary-light)" radius={[5, 5, 0, 0]} />
+                <Bar dataKey="Inactive" fill="#475569" radius={[5, 5, 0, 0]} />
+                <Bar dataKey="Paid" fill="#10b981" radius={[5, 5, 0, 0]} />
+                <Bar dataKey="Unpaid" fill="#ef4444" radius={[5, 5, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

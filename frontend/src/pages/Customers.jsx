@@ -69,7 +69,7 @@ export default function Customers() {
 
   const handleEdit = () => {
     if (selectedIds.length !== 1) {
-      alert("Select exactly 1 customer to edit");
+      alert("Please select exactly 1 customer to edit");
       return;
     }
     const customer = customers.find(c => c.id === selectedIds[0]);
@@ -81,7 +81,7 @@ export default function Customers() {
 
   const handleDelete = () => {
     if (selectedIds.length === 0) return;
-    if (window.confirm(`Delete ${selectedIds.length} selected customer(s)?`)) {
+    if (window.confirm(`Are you sure you want to delete ${selectedIds.length} customer(s)?`)) {
       Promise.all(selectedIds.map(id =>
         fetch(`${API_BASE_URL}/customers/${id}`, { method: 'DELETE' })
           .catch(() => fetch(`https://stk-cable-system.onrender.com/api/customers/${id}`, { method: 'DELETE' }))
@@ -107,9 +107,10 @@ export default function Customers() {
         return res.json();
       })
       .then(() => { setShowModal(false); fetchCustomers(); })
-      .catch(() => setSaveError('Error saving to server.'));
+      .catch(() => setSaveError('Error saving subscriber details.'));
   };
 
+  // Renamed button action: Download CSV
   const exportToExcel = () => {
     let csvContent = "data:text/csv;charset=utf-8,";
     csvContent += "ID,NAME,PLACE,PHONE,BOX_NUMBER,PROVIDER,STATUS,MONTH,TOTAL_AMOUNT,MONTHLY_PAYMENT,PAID\n";
@@ -220,72 +221,72 @@ export default function Customers() {
   });
 
   return (
-    <div className="customers-container">
-      {/* Compact Top Toolbar */}
-      <div className="toolbar-compact">
+    <div>
+      {/* Clean Toolbar */}
+      <div className="toolbar-neat">
         <input
           type="text"
-          className="input-compact"
+          className="input-neat"
           placeholder="🔍 Search subscribers..."
-          style={{ width: '190px' }}
+          style={{ width: '220px' }}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
 
-        <select className="select-compact" value={searchCategory} onChange={e => setSearchCategory(e.target.value)}>
-          <option value="all">Field: All</option>
+        <select className="select-neat" value={searchCategory} onChange={e => setSearchCategory(e.target.value)}>
+          <option value="all">Search in: All Fields</option>
           <option value="name">Name</option>
           <option value="place">Place</option>
           <option value="phone">Phone</option>
           <option value="boxNo">Box ID</option>
         </select>
 
-        <select className="select-compact" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+        <select className="select-neat" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
           <option value="All">Status: All</option>
-          <option value="Active">Active</option>
-          <option value="Deactive">Deactive</option>
+          <option value="Active">🟢 Active Only</option>
+          <option value="Deactive">🔴 Deactive Only</option>
         </select>
 
-        <select className="select-compact" value={paymentFilter} onChange={e => setPaymentFilter(e.target.value)}>
+        <select className="select-neat" value={paymentFilter} onChange={e => setPaymentFilter(e.target.value)}>
           <option value="All">Payment: All</option>
-          <option value="Paid">Paid</option>
-          <option value="Not Paid">Not Paid</option>
+          <option value="Paid">✅ Paid</option>
+          <option value="Not Paid">⚠️ Not Paid</option>
         </select>
 
-        <select className="select-compact" value={providerFilter} onChange={e => setProviderFilter(e.target.value)}>
+        <select className="select-neat" value={providerFilter} onChange={e => setProviderFilter(e.target.value)}>
           <option value="All">Provider: All</option>
           <option value="TCCL">TCCL</option>
           <option value="GPTL">GPTL</option>
         </select>
 
-        {/* Action Buttons */}
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.4rem' }}>
+        {/* Action Buttons: Renamed CSV button to Download as requested */}
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem' }}>
           {selectedIds.length > 0 && isAdmin && (
             <>
               {selectedIds.length === 1 && (
-                <button className="btn btn-ghost btn-sm" onClick={handleEdit}>✏️ Edit</button>
+                <button className="btn btn-ghost" onClick={handleEdit}>✏️ Edit</button>
               )}
-              <button className="btn btn-danger btn-sm" onClick={handleDelete}>🗑️ ({selectedIds.length})</button>
+              <button className="btn btn-danger" onClick={handleDelete}>🗑️ Delete ({selectedIds.length})</button>
             </>
           )}
-          <button className="btn btn-ghost btn-sm" onClick={exportToExcel}>📥 CSV</button>
-          {isAdmin && <button className="btn btn-warning btn-sm" onClick={triggerMonthlyReset}>🔄 Reset</button>}
-          {isAdmin && <button className="btn btn-primary btn-sm" onClick={handleAdd}>+ Add</button>}
+          <button className="btn btn-ghost" onClick={exportToExcel}>📥 Download</button>
+          {isAdmin && <button className="btn btn-warning" onClick={triggerMonthlyReset}>🔄 Trigger Reset</button>}
+          {isAdmin && <button className="btn btn-primary" onClick={handleAdd}>✨ Add Customer</button>}
         </div>
       </div>
 
-      {/* Main Table Card (Fills height) */}
-      <div className="table-card-fill">
+      {/* Main Table Panel */}
+      <div className="table-panel-neat">
         {loading ? (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)' }}>
-            Loading records...
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4rem', color: 'var(--text-muted)' }}>
+            Loading subscriber directory...
           </div>
         ) : (
-          <div className="table-scroll-area">
+          <div className="table-wrapper">
             <table>
               <thead>
                 <tr>
-                  <th style={{ width: '32px', textAlign: 'center' }}>
+                  <th style={{ width: '40px', textAlign: 'center' }}>
                     <input 
                       type="checkbox" 
                       onChange={(e) => {
@@ -306,14 +307,14 @@ export default function Customers() {
                   <th>Total Amount</th>
                   <th>Monthly Rate</th>
                   <th>Payment</th>
-                  <th style={{ textAlign: 'right' }}>History</th>
+                  <th style={{ textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredCustomers.length === 0 ? (
                   <tr>
-                    <td colSpan="12" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
-                      No subscriber records found.
+                    <td colSpan="12" style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-muted)' }}>
+                      No subscriber records found matching your filters.
                     </td>
                   </tr>
                 ) : (
@@ -332,7 +333,7 @@ export default function Customers() {
                         <td style={{ fontWeight: 600, color: '#fff' }}>{customer.name}</td>
                         <td>{customer.place || '—'}</td>
                         <td>{customer.phone || '—'}</td>
-                        <td style={{ fontFamily: 'monospace' }}>{customer.boxNumber}</td>
+                        <td style={{ fontFamily: 'monospace', letterSpacing: '0.04em' }}>{customer.boxNumber}</td>
                         <td>
                           <span className={`badge ${customer.provider?.toLowerCase() === 'tccl' ? 'badge-tccl' : 'badge-gptl'}`}>
                             {(customer.provider || 'tccl').toUpperCase()}
@@ -350,46 +351,46 @@ export default function Customers() {
                         </td>
                         <td>
                           <select
-                            className="select-compact"
-                            style={{ padding: '0.2rem 0.4rem', fontSize: '0.75rem' }}
+                            className="select-neat"
+                            style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }}
                             value={customer.month || 1}
                             onChange={(e) => isAdmin && handleMonthChange(customer.id, e.target.value)}
                             disabled={!isAdmin}
                           >
                             {[1, 2, 3, 4, 5, 6].map(m => (
-                              <option key={m} value={m}>{m} M</option>
+                              <option key={m} value={m}>{m} Month{m > 1 ? 's' : ''}</option>
                             ))}
                           </select>
                         </td>
                         <td>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
-                            <span>₹</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                            <span style={{ color: 'var(--text-muted)' }}>₹</span>
                             <input
                               type="number"
-                              className="input-compact"
-                              style={{ width: '70px', padding: '0.2rem 0.4rem' }}
+                              className="input-neat"
+                              style={{ width: '85px', padding: '0.3rem 0.5rem' }}
                               value={inlineEdits[`${customer.id}-totalAmount`] !== undefined ? inlineEdits[`${customer.id}-totalAmount`] : customer.totalAmount}
                               onChange={(e) => isAdmin && handleInlineChange(customer.id, 'totalAmount', e.target.value)}
                               disabled={!isAdmin}
                             />
                             {isAdmin && inlineEdits[`${customer.id}-totalAmount`] !== undefined && (
-                              <button className="btn btn-success btn-sm" style={{ padding: '0.15rem 0.35rem' }} onClick={() => saveInlineEdit(customer.id, 'totalAmount')}>✓</button>
+                              <button className="btn btn-success btn-sm" style={{ padding: '0.2rem 0.4rem' }} onClick={() => saveInlineEdit(customer.id, 'totalAmount')}>✓</button>
                             )}
                           </div>
                         </td>
                         <td>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
-                            <span>₹</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                            <span style={{ color: 'var(--text-muted)' }}>₹</span>
                             <input
                               type="number"
-                              className="input-compact"
-                              style={{ width: '70px', padding: '0.2rem 0.4rem' }}
+                              className="input-neat"
+                              style={{ width: '85px', padding: '0.3rem 0.5rem' }}
                               value={inlineEdits[`${customer.id}-monthlyPayment`] !== undefined ? inlineEdits[`${customer.id}-monthlyPayment`] : customer.monthlyPayment}
                               onChange={(e) => isAdmin && handleInlineChange(customer.id, 'monthlyPayment', e.target.value)}
                               disabled={!isAdmin}
                             />
                             {isAdmin && inlineEdits[`${customer.id}-monthlyPayment`] !== undefined && (
-                              <button className="btn btn-success btn-sm" style={{ padding: '0.15rem 0.35rem' }} onClick={() => saveInlineEdit(customer.id, 'monthlyPayment')}>✓</button>
+                              <button className="btn btn-success btn-sm" style={{ padding: '0.2rem 0.4rem' }} onClick={() => saveInlineEdit(customer.id, 'monthlyPayment')}>✓</button>
                             )}
                           </div>
                         </td>
@@ -404,7 +405,7 @@ export default function Customers() {
                           </button>
                         </td>
                         <td style={{ textAlign: 'right' }}>
-                          <button className="btn btn-ghost btn-sm" onClick={() => fetchHistory(customer)}>📜 View</button>
+                          <button className="btn btn-ghost btn-sm" onClick={() => fetchHistory(customer)}>📜 History</button>
                         </td>
                       </tr>
                     );
@@ -419,52 +420,56 @@ export default function Customers() {
       {/* Modal */}
       {showModal && (
         <div className="modal-overlay">
-          <div className="modal">
+          <div className="modal-neat">
             <div className="modal-header">
-              <h3 style={{ fontSize: '1rem' }}>{currentCustomer ? 'Edit Customer' : 'Add New Customer'}</h3>
+              <h3 className="modal-title">{currentCustomer ? 'Edit Subscriber' : 'Add New Subscriber'}</h3>
               <button className="modal-close" onClick={() => setShowModal(false)}>✕</button>
             </div>
             <form onSubmit={handleSave}>
-              {saveError && <div style={{ color: '#f87171', fontSize: '0.8rem', marginBottom: '0.5rem' }}>{saveError}</div>}
-              <div className="form-group" style={{ marginBottom: '0.85rem' }}>
-                <label className="form-label">Subscriber Name</label>
-                <input className="input-compact" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
+              {saveError && <div style={{ color: '#f87171', fontSize: '0.85rem', marginBottom: '1rem' }}>{saveError}</div>}
+              
+              <div className="form-group-item" style={{ marginBottom: '1rem' }}>
+                <label className="form-group-label">Subscriber Name</label>
+                <input className="input-neat" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="Full Name" />
               </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">Place</label>
-                  <input className="input-compact" value={formData.place} onChange={e => setFormData({ ...formData, place: e.target.value })} />
+
+              <div className="form-grid-2">
+                <div className="form-group-item">
+                  <label className="form-group-label">Place / Location</label>
+                  <input className="input-neat" value={formData.place} onChange={e => setFormData({ ...formData, place: e.target.value })} placeholder="Area / City" />
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Phone</label>
-                  <input className="input-compact" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
+                <div className="form-group-item">
+                  <label className="form-group-label">Phone Contact</label>
+                  <input className="input-neat" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} placeholder="Phone number" />
                 </div>
               </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">Box MAC / Number</label>
-                  <input className="input-compact" value={formData.boxNumber} onChange={e => setFormData({ ...formData, boxNumber: e.target.value })} />
+
+              <div className="form-grid-2">
+                <div className="form-group-item">
+                  <label className="form-group-label">Box MAC / ID</label>
+                  <input className="input-neat" value={formData.boxNumber} onChange={e => setFormData({ ...formData, boxNumber: e.target.value })} placeholder="Box Number" />
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Provider</label>
-                  <select className="select-compact" value={formData.provider} onChange={e => setFormData({ ...formData, provider: e.target.value })}>
+                <div className="form-group-item">
+                  <label className="form-group-label">Cable Provider</label>
+                  <select className="select-neat" value={formData.provider} onChange={e => setFormData({ ...formData, provider: e.target.value })}>
                     <option value="tccl">TCCL</option>
                     <option value="gptl">GPTL</option>
                   </select>
                 </div>
               </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">Status</label>
-                  <select className="select-compact" value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value })}>
+
+              <div className="form-grid-2">
+                <div className="form-group-item">
+                  <label className="form-group-label">Status</label>
+                  <select className="select-neat" value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value })}>
                     <option value="Active">Active</option>
                     <option value="Deactive">Deactive</option>
                   </select>
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Month (1 - 6)</label>
+                <div className="form-group-item">
+                  <label className="form-group-label">Month Duration</label>
                   <select
-                    className="select-compact"
+                    className="select-neat"
                     value={formData.month || 1}
                     onChange={e => {
                       const m = parseInt(e.target.value, 10);
@@ -481,26 +486,29 @@ export default function Customers() {
                   </select>
                 </div>
               </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">Total Amount (₹)</label>
-                  <input className="input-compact" type="number" step="0.01" value={formData.totalAmount} onChange={e => setFormData({ ...formData, totalAmount: parseFloat(e.target.value) || 0 })} />
+
+              <div className="form-grid-2">
+                <div className="form-group-item">
+                  <label className="form-group-label">Total Amount (₹)</label>
+                  <input className="input-neat" type="number" step="0.01" value={formData.totalAmount} onChange={e => setFormData({ ...formData, totalAmount: parseFloat(e.target.value) || 0 })} />
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Monthly Rate (₹)</label>
-                  <input className="input-compact" type="number" step="0.01" value={formData.monthlyPayment} onChange={e => setFormData({ ...formData, monthlyPayment: parseFloat(e.target.value) || 0 })} />
+                <div className="form-group-item">
+                  <label className="form-group-label">Monthly Rate (₹)</label>
+                  <input className="input-neat" type="number" step="0.01" value={formData.monthlyPayment} onChange={e => setFormData({ ...formData, monthlyPayment: parseFloat(e.target.value) || 0 })} />
                 </div>
               </div>
-              <div className="form-group" style={{ marginBottom: '1rem' }}>
-                <label className="form-label">Payment Status</label>
-                <select className="select-compact" value={formData.paid} onChange={e => setFormData({ ...formData, paid: e.target.value })}>
+
+              <div className="form-group-item" style={{ marginBottom: '1.5rem' }}>
+                <label className="form-group-label">Payment Status</label>
+                <select className="select-neat" value={formData.paid} onChange={e => setFormData({ ...formData, paid: e.target.value })}>
                   <option value="Not Paid">Not Paid</option>
                   <option value="Paid">Paid</option>
                 </select>
               </div>
-              <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
                 <button type="button" className="btn btn-ghost" onClick={() => setShowModal(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">{currentCustomer ? 'Update' : 'Create'}</button>
+                <button type="submit" className="btn btn-primary">{currentCustomer ? 'Save Changes' : 'Create Subscriber'}</button>
               </div>
             </form>
           </div>
@@ -510,24 +518,24 @@ export default function Customers() {
       {/* History Modal */}
       {showHistoryModal && (
         <div className="modal-overlay">
-          <div className="modal" style={{ maxWidth: '450px' }}>
+          <div className="modal-neat" style={{ maxWidth: '480px' }}>
             <div className="modal-header">
-              <h3 style={{ fontSize: '1rem' }}>History: {currentCustomer?.name}</h3>
+              <h3 className="modal-title">History: {currentCustomer?.name}</h3>
               <button className="modal-close" onClick={() => setShowHistoryModal(false)}>✕</button>
             </div>
             {customerHistory.length > 0 ? (
-              <div style={{ maxHeight: '250px', overflowY: 'auto' }}>
+              <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
                 {customerHistory.map((h, i) => (
-                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.8rem' }}>
-                    <span>{new Date(h.date).toLocaleDateString()}</span>
+                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.6rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.85rem' }}>
+                    <span style={{ color: 'var(--text-dim)' }}>{new Date(h.date).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</span>
                     <strong style={{ color: '#34d399' }}>₹{h.amount}</strong>
                   </div>
                 ))}
               </div>
             ) : (
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No payment history recorded.</p>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', padding: '1rem 0' }}>No historical payment records logged for this customer.</p>
             )}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.25rem' }}>
               <button className="btn btn-primary btn-sm" onClick={() => setShowHistoryModal(false)}>Close</button>
             </div>
           </div>
