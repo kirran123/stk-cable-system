@@ -6,15 +6,17 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('https://stk-cable-system.onrender.com/api/customers')
+    fetch('http://localhost:5000/api/customers')
       .then(res => res.json())
       .then(data => {
         setCustomers(data);
         setLoading(false);
       })
-      .catch(err => {
-        console.error('Failed to fetch customers', err);
-        setLoading(false);
+      .catch(() => {
+        fetch('https://stk-cable-system.onrender.com/api/customers')
+          .then(res => res.json())
+          .then(data => { setCustomers(data); setLoading(false); })
+          .catch(err => { console.error('Failed to fetch customers', err); setLoading(false); });
       });
   }, []);
 

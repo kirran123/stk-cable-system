@@ -1,0 +1,8 @@
+node_modules/
+.env.local
+backend/test-*.js
+backend/node_modules/
+frontend/node_modules/
+frontend/dist/
+convex/_generated/
+backend/convex/_generated/

@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 
+const API_BASE_URL = 'http://localhost:5000/api';
+
 export default function Customers() {
   const { user } = useOutletContext();
   const isAdmin = user?.role === 'admin';
@@ -30,20 +32,23 @@ export default function Customers() {
   // Form Data
   const [formData, setFormData] = useState({
     name: '', place: '', phone: '', boxNumber: '', provider: 'tccl',
-    status: 'Active', totalAmount: 0, monthlyPayment: 0, paid: 'Not Paid'
+    status: 'Active', month: 1, totalAmount: 0, monthlyPayment: 0, paid: 'Not Paid'
   });
 
   const fetchCustomers = () => {
     setLoading(true);
-    fetch('https://stk-cable-system.onrender.com/api/customers')
+    fetch(`${API_BASE_URL}/customers`)
       .then(res => res.json())
       .then(data => {
         setCustomers(data);
         setLoading(false);
       })
       .catch(err => {
-        console.error('Failed to fetch', err);
-        setLoading(false);
+        console.error('Failed to fetch from local server, trying remote...', err);
+        fetch('https://stk-cable-system.onrender.com/api/customers')
+          .then(r => r.json())
+          .then(data => { setCustomers(data); setLoading(false); })
+          .catch(e => { console.error(e); setLoading(false); });
       });
   };
 
@@ -62,7 +67,7 @@ export default function Customers() {
   const handleAdd = () => {
     setFormData({
       name: '', place: '', phone: '', boxNumber: '', provider: 'tccl',
-      status: 'Active', totalAmount: 0, monthlyPayment: 0, paid: 'Not Paid'
+      status: 'Active', month: 1, totalAmount: 0, monthlyPayment: 0, paid: 'Not Paid'
     });
     setCurrentCustomer(null);
     setSaveError(''); // clear any previous errors
@@ -75,7 +80,10 @@ export default function Customers() {
       return;
     }
     const customer = customers.find(c => c.id === selectedIds[0]);
-    setFormData(customer);
+    setFormData({
+      ...customer,
+      month: customer.month || 1
+    });
     setCurrentCustomer(customer);
     setSaveError(''); // clear any previous errors
     setShowModal(true);
@@ -85,7 +93,8 @@ export default function Customers() {
     if (selectedIds.length === 0) return;
     if (window.confirm(`Are you sure you want to delete ${selectedIds.length} customer(s)?`)) {
       Promise.all(selectedIds.map(id =>
-        fetch(`https://stk-cable-system.onrender.com/api/customers/${id}`, { method: 'DELETE' })
+        fetch(`${API_BASE_URL}/customers/${id}`, { method: 'DELETE' })
+          .catch(() => fetch(`https://stk-cable-system.onrender.com/api/customers/${id}`, { method: 'DELETE' }))
       )).then(() => {
         setSelectedIds([]);
         fetchCustomers();
@@ -96,17 +105,15 @@ export default function Customers() {
   const handleSave = (e) => {
     e.preventDefault();
     const method = currentCustomer ? 'PUT' : 'POST';
-    const url = currentCustomer
-      ? `https://stk-cable-system.onrender.com/api/customers/${currentCustomer.id}`
-      : 'https://stk-cable-system.onrender.com/api/customers';
+    const endpoint = currentCustomer ? `/customers/${currentCustomer.id}` : '/customers';
 
-    fetch(url, {
+    fetch(`${API_BASE_URL}${endpoint}`, {
       method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(formData)
     })
       .then(res => {
-        if (!res.ok) throw new Error('Failed to save to database. Is the backend running?');
+        if (!res.ok) throw new Error('Failed to save to database.');
         return res.json();
       })
       .then(() => {
@@ -114,8 +121,14 @@ export default function Customers() {
         fetchCustomers();
       })
       .catch(err => {
-        console.error('Error saving customer:', err);
-        setSaveError('Failed to connect to the backend server. Please verify it is running on Render.');
+        console.error('Error saving customer locally, trying Render backend...', err);
+        fetch(`https://stk-cable-system.onrender.com/api${endpoint}`, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        })
+          .then(() => { setShowModal(false); fetchCustomers(); })
+          .catch(() => setSaveError('Failed to connect to the backend server.'));
       });
   };
 
@@ -124,10 +137,10 @@ export default function Customers() {
     // Title row
     csvContent += "STK CABLE SYSTEM - CUSTOMER REPORT\n\n";
     // Headers
-    csvContent += "CUSTOMER ID,REQUIRED NAME,PLACE,PHONE NUMBER,BOX NUMBER (MAC),PROVIDER,ACCOUNT STATUS,TOTAL AMOUNT (INR),MONTHLY PAYMENT (INR),PAYMENT STATUS\n";
+    csvContent += "CUSTOMER ID,REQUIRED NAME,PLACE,PHONE NUMBER,BOX NUMBER (MAC),PROVIDER,ACCOUNT STATUS,MONTH,TOTAL AMOUNT (INR),MONTHLY PAYMENT (INR),PAYMENT STATUS\n";
 
     customers.forEach(row => {
-      const dataString = `"${row.id}","${row.name}","${row.place}","${row.phone}","${row.boxNumber}","${(row.provider || '').toUpperCase()}","${row.status}",${row.totalAmount},${row.monthlyPayment},"${row.paid}"`;
+      const dataString = `"${row.id}","${row.name}","${row.place}","${row.phone}","${row.boxNumber}","${(row.provider || '').toUpperCase()}","${row.status}",${row.month || 1},${row.totalAmount},${row.monthlyPayment},"${row.paid}"`;
       csvContent += dataString + "\n";
     });
 
@@ -170,6 +183,32 @@ export default function Customers() {
     document.body.removeChild(link);
   };
 
+  const handleMonthChange = (id, newMonthVal) => {
+    const newMonth = parseInt(newMonthVal, 10);
+    const customer = customers.find(c => c.id === id);
+    if (!customer) return;
+
+    const oldMonth = customer.month || 1;
+    const currentTotal = inlineEdits[`${id}-totalAmount`] !== undefined 
+      ? parseFloat(inlineEdits[`${id}-totalAmount`]) 
+      : (customer.totalAmount || 0);
+
+    const baseRate = oldMonth > 0 ? (currentTotal / oldMonth) : currentTotal;
+    const calculatedTotal = Math.round(baseRate * newMonth);
+
+    // Optimistically update UI
+    setCustomers(customers.map(c => c.id === id ? { ...c, month: newMonth, totalAmount: calculatedTotal } : c));
+
+    fetch(`${API_BASE_URL}/customers/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ month: newMonth, totalAmount: calculatedTotal })
+    }).catch(err => {
+      console.error('Failed to update month', err);
+      fetchCustomers();
+    });
+  };
+
   const handleToggle = (id, field, currentValue) => {
     let newValue;
     if (field === 'status') {
@@ -181,7 +220,7 @@ export default function Customers() {
     // Optimistically update UI
     setCustomers(customers.map(c => c.id === id ? { ...c, [field]: newValue } : c));
 
-    fetch(`https://stk-cable-system.onrender.com/api/customers/${id}`, {
+    fetch(`${API_BASE_URL}/customers/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ [field]: newValue })
@@ -205,7 +244,7 @@ export default function Customers() {
     const numValue = parseFloat(valString) || 0;
     setCustomers(customers.map(c => c.id === id ? { ...c, [field]: numValue } : c));
 
-    fetch(`https://stk-cable-system.onrender.com/api/customers/${id}`, {
+    fetch(`${API_BASE_URL}/customers/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ [field]: numValue })
@@ -226,7 +265,7 @@ export default function Customers() {
     setCurrentCustomer(customer);
     setCustomerHistory([]); // Clear past
     setLoading(true);
-    fetch(`https://stk-cable-system.onrender.com/api/customers/${customer.id}/history`)
+    fetch(`${API_BASE_URL}/customers/${customer.id}/history`)
       .then(r => r.json())
       .then(data => {
         setCustomerHistory(data);
@@ -243,7 +282,7 @@ export default function Customers() {
   const triggerMonthlyReset = () => {
     if (window.confirm("Are you sure you want to trigger the monthly reset? This will set all monthly payments to 0 and move current amounts to history.")) {
       setLoading(true);
-      fetch('https://stk-cable-system.onrender.com/api/trigger-monthly-reset', {
+      fetch(`${API_BASE_URL}/trigger-monthly-reset`, {
         method: 'POST'
       }).then(() => {
         fetchCustomers();
@@ -374,6 +413,7 @@ export default function Customers() {
                   <th>Box No</th>
                   <th>Provider</th>
                   <th>Status</th>
+                  <th>Month</th>
                   <th>Amount</th>
                   <th>Monthly</th>
                   <th>Paid</th>
@@ -411,6 +451,19 @@ export default function Customers() {
                       >
                         {customer.status}
                       </button>
+                    </td>
+                    <td>
+                      <select
+                        className="input-field"
+                        style={{ width: '65px', padding: '0.25rem 0.4rem', fontWeight: 600, background: 'rgba(0,0,0,0.2)' }}
+                        value={customer.month || 1}
+                        onChange={(e) => isAdmin && handleMonthChange(customer.id, e.target.value)}
+                        disabled={!isAdmin}
+                      >
+                        {[1, 2, 3, 4, 5, 6].map(m => (
+                          <option key={m} value={m}>{m}</option>
+                        ))}
+                      </select>
                     </td>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -529,6 +582,27 @@ export default function Customers() {
                     <option value="Deactive">Deactive</option>
                   </select>
                 </div>
+                <div className="input-group">
+                  <label className="input-label">Month (1 - 6)</label>
+                  <select
+                    className="input-field"
+                    value={formData.month || 1}
+                    onChange={e => {
+                      const m = parseInt(e.target.value, 10);
+                      const oldM = formData.month || 1;
+                      const currentTotal = formData.totalAmount || 0;
+                      const baseRate = oldM > 0 ? (currentTotal / oldM) : currentTotal;
+                      const calculatedTotal = Math.round(baseRate * m);
+                      setFormData({ ...formData, month: m, totalAmount: calculatedTotal });
+                    }}
+                  >
+                    {[1, 2, 3, 4, 5, 6].map(m => (
+                      <option key={m} value={m}>{m} Month{m > 1 ? 's' : ''}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div className="input-group">
                   <label className="input-label">Payment Status</label>
                   <select className="input-field" value={formData.paid} onChange={e => setFormData({ ...formData, paid: e.target.value })}>

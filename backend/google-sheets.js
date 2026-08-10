@@ -1,6 +1,7 @@
 import { GoogleSpreadsheet } from 'google-spreadsheet';
 import { JWT } from 'google-auth-library';
 import dotenv from 'dotenv';
+import { syncAddCustomer, syncUpdateCustomer, syncDeleteCustomer, syncAddHistoryEntry, syncMonthlyReset } from './convex-sync.js';
 dotenv.config();
 
 // Define credentials
@@ -70,6 +71,8 @@ export const logHistoryEntry = async (customerId, customerName, amount) => {
       date: dateStr,
       amount
     });
+    // Dual sync to Convex
+    await syncAddHistoryEntry(customerId, customerName, amount);
   } catch (e) {
     console.error("Failed to log history:", e);
   }
@@ -85,7 +88,7 @@ export const getCustomers = async () => {
       await sheet.loadHeaderRow();
     } catch (e) {
       // If error, it means headers are not set or sheet is completely empty
-      await sheet.setHeaderRow(['id', 'name', 'place', 'phone', 'boxNumber', 'provider', 'status', 'totalAmount', 'monthlyPayment', 'paid']);
+      await sheet.setHeaderRow(['id', 'name', 'place', 'phone', 'boxNumber', 'provider', 'status', 'month', 'totalAmount', 'monthlyPayment', 'paid']);
     }
 
     // Fetch unformatted values to avoid commas and scientific notation losing precision
@@ -111,6 +114,8 @@ export const getCustomers = async () => {
         return String(val).trim();
       };
 
+      const monthParsed = parseInt(getVal('month'), 10);
+
       return {
         id: getVal('id'),
         name: getVal('name'),
@@ -119,6 +124,7 @@ export const getCustomers = async () => {
         boxNumber: getVal('boxNumber'),
         provider: getVal('provider'),
         status: getVal('status'),
+        month: isNaN(monthParsed) || monthParsed < 1 ? 1 : monthParsed,
         totalAmount: parseFloat(getVal('totalAmount') || 0),
         monthlyPayment: parseFloat(getVal('monthlyPayment') || 0),
         paid: getVal('paid')
@@ -155,12 +161,15 @@ export const addCustomer = async (customerData) => {
       boxNumber: customerData.boxNumber || '',
       provider: customerData.provider || 'tccl',
       status: customerData.status || 'Active',
+      month: (customerData.month || 1).toString(),
       totalAmount: customerData.totalAmount || 0,
       monthlyPayment: customerData.monthlyPayment || 0,
       paid: customerData.paid || 'Not Paid'
     };
 
     await sheet.addRow(newCustomer, { raw: true });
+    // Dual sync to Convex
+    await syncAddCustomer(newCustomer);
     return newCustomer;
   } catch (error) {
     console.error('Error in addCustomer:', error);
@@ -182,6 +191,7 @@ export const updateCustomer = async (id, updateData) => {
       if (updateData.boxNumber !== undefined) row.assign({ boxNumber: updateData.boxNumber });
       if (updateData.provider !== undefined) row.assign({ provider: updateData.provider });
       if (updateData.status !== undefined) row.assign({ status: updateData.status });
+      if (updateData.month !== undefined) row.assign({ month: updateData.month.toString() });
 
       if (updateData.totalAmount !== undefined) row.assign({ totalAmount: updateData.totalAmount });
 
@@ -203,6 +213,8 @@ export const updateCustomer = async (id, updateData) => {
       }
 
       await row.save({ raw: true });
+      // Dual sync to Convex
+      await syncUpdateCustomer(id, updateData);
       return { id, ...updateData };
     }
     throw new Error('Customer not found');
@@ -271,6 +283,8 @@ export const deleteCustomer = async (id) => {
     const row = rows.find(r => r.get('id') && r.get('id').toString() === id.toString());
     if (row) {
       await row.delete();
+      // Dual sync to Convex
+      await syncDeleteCustomer(id);
       return true;
     }
     throw new Error('Customer not found');
@@ -291,24 +305,35 @@ export const executeMonthlyReset = async () => {
 
     for (const row of rows) {
       let currentMonthly = parseFloat(row.get('monthlyPayment') || 0);
+      let monthVal = parseInt(row.get('month') || '1', 10);
+      if (isNaN(monthVal) || monthVal < 1) monthVal = 1;
 
-      if (currentMonthly > 0) {
-        // Add to history sheet
-        try {
-          await logHistoryEntry(row.get('id'), row.get('name'), currentMonthly);
-        } catch (e) { }
-
-        row.assign({
-          monthlyPayment: 0,
-          paid: 'Not Paid'
-        });
-
+      if (monthVal > 1) {
+        // Customer paid for multiple months, decrement month count by 1
+        row.assign({ month: (monthVal - 1).toString() });
         await row.save({ raw: true });
-        // small delay to avoid rate limiting
         await new Promise(r => setTimeout(r, 200));
+      } else {
+        // monthVal === 1, reset payment status
+        if (currentMonthly > 0 || row.get('paid') === 'Paid') {
+          if (currentMonthly > 0) {
+            try {
+              await logHistoryEntry(row.get('id'), row.get('name'), currentMonthly);
+            } catch (e) { }
+          }
+          row.assign({
+            monthlyPayment: 0,
+            paid: 'Not Paid',
+            month: '1'
+          });
+          await row.save({ raw: true });
+          await new Promise(r => setTimeout(r, 200));
+        }
       }
     }
     console.log(`Monthly reset executed successfully for ${rows.length} records.`);
+    // Dual sync to Convex
+    await syncMonthlyReset();
   } catch (e) {
     console.error('Error in executeMonthlyReset:', e);
   }
