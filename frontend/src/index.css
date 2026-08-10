@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 /* ══════════════════════════════════════════
-   BALANCED DESIGN SYSTEM
+   DESIGN SYSTEM
 ══════════════════════════════════════════ */
 :root {
   --primary:        #6366f1;
@@ -39,20 +39,19 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 html, body {
-  height: 100vh;
-  width: 100vw;
+  min-height: 100vh;
   font-family: 'Inter', system-ui, sans-serif;
   background: var(--bg);
   background-image: var(--bg-gradient);
   color: var(--text);
   line-height: 1.5;
-  overflow: hidden; /* Lock main body scroll completely */
+  background-attachment: fixed;
 }
 
-/* HIGHLY VISIBLE SCROLLBARS */
+/* HIGHLY VISIBLE DUAL SCROLLBARS (PURPLE THUMB) */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 10px;
+  width: 8px;   /* Vertical scrollbar width */
+  height: 10px;  /* Horizontal scrollbar height */
 }
 ::-webkit-scrollbar-track {
   background: rgba(10, 15, 26, 0.9);
@@ -73,23 +72,23 @@ html, body {
 }
 
 /* ══════════════════════════════════════════
-   APP LAYOUT (100% VIEWPORT LOCKED)
+   APP LAYOUT
 ══════════════════════════════════════════ */
 .app-shell {
   display: flex;
-  height: 100vh;
-  width: 100vw;
-  overflow: hidden;
+  min-height: 100vh;
 }
 
 .sidebar {
   width: var(--sidebar-w);
-  height: 100vh;
+  min-height: 100vh;
   background: #0d1322;
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
   z-index: 100;
 }
 
@@ -165,12 +164,12 @@ html, body {
 
 /* MAIN AREA */
 .main-area {
+  margin-left: var(--sidebar-w);
   flex: 1;
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  min-height: 100vh;
   min-width: 0;
-  overflow: hidden;
 }
 
 .topbar {
@@ -180,7 +179,7 @@ html, body {
   border-bottom: 1px solid var(--border);
   display: flex; align-items: center; justify-content: space-between;
   padding: 0 2rem;
-  flex-shrink: 0;
+  position: sticky; top: 0; z-index: 50;
 }
 .topbar-title { font-size: 1.2rem; font-weight: 700; }
 
@@ -189,7 +188,6 @@ html, body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow: hidden; /* Lock content container from page scroll */
 }
 
 /* ══════════════════════════════════════════
@@ -198,8 +196,6 @@ html, body {
 .dashboard-container {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  overflow-y: auto;
   gap: 1.25rem;
 }
 
@@ -207,7 +203,6 @@ html, body {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 1.25rem;
-  flex-shrink: 0;
 }
 
 .stat-card-neat {
@@ -239,8 +234,6 @@ html, body {
   display: grid;
   grid-template-columns: 360px 1fr;
   gap: 1.5rem;
-  flex: 1;
-  min-height: 0;
 }
 @media (max-width: 1024px) {
   .dashboard-grid-two { grid-template-columns: 1fr; }
@@ -266,13 +259,12 @@ html, body {
 .provider-stat-line { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; padding: 0.4rem 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
 
 /* ══════════════════════════════════════════
-   CUSTOMER DIRECTORY & SCREEN-BOUND TABLE
+   CUSTOMER DIRECTORY — DUAL SCROLLBAR TABLE BOX
+   (Vertical Scrollbar for Up/Down rows + Horizontal Scrollbar ALWAYS visible on screen!)
 ══════════════════════════════════════════ */
 .customers-container {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  min-height: 0; /* Flexbox trick to allow child to scroll */
 }
 
 .toolbar-neat {
@@ -294,24 +286,20 @@ html, body {
   box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
-  flex: 1;
-  min-height: 0; /* Crucial for internal scroll container */
-  overflow: hidden;
+  position: relative;
 }
 
-/* Horizontal & Vertical Scrollbars inside table-wrapper-scrollable, RIGHT AT THE BOTTOM OF THE SCREEN */
+/* Dual Scrollbar Wrapper: Bounded height guarantees horizontal scrollbar is ALWAYS visible right below on screen */
 .table-wrapper-scrollable {
-  flex: 1;
   overflow-x: auto !important;
   overflow-y: auto !important;
-  height: 100%;
+  max-height: calc(100vh - 190px); /* Locks table height to fit browser viewport */
   width: 100%;
-  position: relative;
 }
 
 table {
   width: 100%;
-  min-width: 1250px;
+  min-width: 1300px; /* Guarantees horizontal scrollbar is active */
   border-collapse: collapse;
   font-size: 0.875rem;
 }
@@ -348,13 +336,8 @@ tbody tr.selected-row { background: rgba(99,102,241,0.1); }
 .btn:hover { transform: translateY(-1px); }
 .btn:active { transform: scale(0.97); }
 
-.btn-primary {
-  background: linear-gradient(135deg, var(--primary-dark), var(--primary-light));
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(99,102,241,0.35);
-}
+.btn-primary { background: linear-gradient(135deg, var(--primary-dark), var(--primary-light)); color: #fff; box-shadow: 0 4px 12px rgba(99,102,241,0.35); }
 .btn-primary:hover { box-shadow: 0 6px 18px rgba(99,102,241,0.5); }
-
 .btn-success { background: linear-gradient(135deg, #059669, #34d399); color: #fff; }
 .btn-danger { background: linear-gradient(135deg, #dc2626, #f87171); color: #fff; }
 .btn-warning { background: linear-gradient(135deg, #d97706, #fbbf24); color: #fff; }
