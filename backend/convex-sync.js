@@ -1,8 +1,12 @@
 import { ConvexHttpClient } from "convex/browser";
 import dotenv from "dotenv";
+import { existsSync } from "fs";
+// Load .env first, then .env.local overrides it
 dotenv.config();
+if (existsSync('.env.local')) dotenv.config({ path: '.env.local', override: true });
 
-const convexUrl = process.env.CONVEX_URL || "https://fearless-dalmatian-99.convex.cloud";
+// Use CONVEX_URL from env (set in .env or .env.local), fallback to known deployment
+const convexUrl = process.env.CONVEX_URL || "https://calm-bird-425.convex.cloud";
 let client = null;
 
 try {
