@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
-
-const API_BASE_URL = 'http://localhost:5000/api';
+import { getApiBaseUrl, fetchCustomersData } from '../apiConfig';
 
 export default function Customers() {
+  const API_BASE_URL = getApiBaseUrl();
   const { user } = useOutletContext();
   const isAdmin = user?.role === 'admin';
   const [customers, setCustomers] = useState([]);
@@ -32,17 +32,13 @@ export default function Customers() {
     status: 'Active', month: 1, totalAmount: 0, monthlyPayment: 0, paid: 'Not Paid'
   });
 
-  const fetchCustomers = () => {
+  const fetchCustomers = async () => {
     setLoading(true);
-    fetch(`${API_BASE_URL}/customers`)
-      .then(res => res.json())
-      .then(data => { setCustomers(data); setLoading(false); })
-      .catch(() => {
-        fetch('https://stk-cable-system.onrender.com/api/customers')
-          .then(r => r.json())
-          .then(data => { setCustomers(data); setLoading(false); })
-          .catch(() => setLoading(false));
-      });
+    const data = await fetchCustomersData();
+    if (data) {
+      setCustomers(data);
+    }
+    setLoading(false);
   };
 
   useEffect(() => {

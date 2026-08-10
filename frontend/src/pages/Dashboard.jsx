@@ -1,25 +1,32 @@
 import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { fetchCustomersData } from '../apiConfig';
 
 export default function Dashboard() {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/customers')
-      .then(res => res.json())
-      .then(data => { setCustomers(data); setLoading(false); })
-      .catch(() => {
-        fetch('https://stk-cable-system.onrender.com/api/customers')
-          .then(res => res.json())
-          .then(data => { setCustomers(data); setLoading(false); })
-          .catch(() => setLoading(false));
-      });
+    let isMounted = true;
+    const loadData = async () => {
+      setLoading(true);
+      const data = await fetchCustomersData();
+      if (isMounted) {
+        if (data) {
+          setCustomers(data);
+        }
+        setLoading(false);
+      }
+    };
+    loadData();
+    return () => { isMounted = false; };
   }, []);
 
   if (loading) return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '50vh', color: 'var(--text-muted)' }}>
-      Loading analytics data...
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '50vh', color: 'var(--text-muted)', gap: '1rem' }}>
+      <div style={{ width: 36, height: 36, border: '3px solid rgba(99,102,241,0.2)', borderTopColor: '#6366f1', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+      <span>Loading network analytics...</span>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 
