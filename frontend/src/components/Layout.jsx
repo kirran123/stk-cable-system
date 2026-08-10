@@ -1,20 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 
 export default function Layout({ user, onLogout }) {
   const location = useLocation();
-  const [theme, setTheme] = useState(() => {
-    return localStorage.getItem('theme') || 'dark';
-  });
-
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('theme', theme);
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
-  };
 
   useEffect(() => {
     let timeoutId;
@@ -46,13 +34,6 @@ export default function Layout({ user, onLogout }) {
 
   return (
     <div className="app-shell">
-      {/* Cute & Professional Ambient Floating Glow Background */}
-      <div className="bg-ambient-shapes">
-        <div className="ambient-blob blob-1"></div>
-        <div className="ambient-blob blob-2"></div>
-        <div className="ambient-blob blob-3"></div>
-      </div>
-
       {/* Sidebar Navigation */}
       <aside className="sidebar">
         <div className="sidebar-logo">
@@ -104,15 +85,7 @@ export default function Layout({ user, onLogout }) {
       <div className="main-area">
         <header className="topbar">
           <h1 className="topbar-title">{pageTitle}</h1>
-          
-          {/* Light / Dark Mode Toggle Button */}
-          <button className="theme-toggle-btn" onClick={toggleTheme} title="Toggle Light/Dark Theme">
-            {theme === 'dark' ? (
-              <>☀️ <span>Light Mode</span></>
-            ) : (
-              <>🌙 <span>Dark Mode</span></>
-            )}
-          </button>
+          {/* Note: Convex marks removed completely as requested */}
         </header>
 
         <main className="page-content">
