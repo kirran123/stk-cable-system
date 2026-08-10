@@ -1,467 +1,492 @@
 import { useState, useEffect } from 'react';
 
-const ALLOWED_USERS = {
-  sudhakar: 'sudhakar14',
-  kishore: 'kishore14',
-  kirran: 'kirran14',
-  cable: 'cable',
-};
-
-/* Animated TV channel cards shown in background */
-const TV_CHANNELS = [
-  { ch: '01', label: 'News HD', color: '#6366f1' },
-  { ch: '05', label: 'Sports', color: '#06b6d4' },
-  { ch: '12', label: 'Movies', color: '#ec4899' },
-  { ch: '24', label: 'Kids', color: '#f59e0b' },
-  { ch: '36', label: 'Music', color: '#10b981' },
-  { ch: '48', label: 'Info', color: '#8b5cf6' },
+const CHANNELS = [
+  { num: 'CH 01', name: 'NEWS 24HD',   color: '#6366f1', icon: '📰' },
+  { num: 'CH 05', name: 'SPORTS MAX',  color: '#06b6d4', icon: '⚽' },
+  { num: 'CH 12', name: 'MOVIES PLUS', color: '#ec4899', icon: '🎬' },
+  { num: 'CH 24', name: 'MUSIC TV',    color: '#f59e0b', icon: '🎵' },
+  { num: 'CH 36', name: 'INFO PRIME',  color: '#10b981', icon: '📡' },
 ];
 
 export default function Login({ onLogin }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [signal, setSignal] = useState(100);
-  const [currentCh, setCurrentCh] = useState(0);
-  const [showStatic, setShowStatic] = useState(false);
+  const [chIndex, setChIndex] = useState(0);
+  const [switching, setSwitching] = useState(false);
+  const [signalStrength, setSignalStrength] = useState(4);
 
-  /* Cycle through channels every 3s (simulates flipping channels) */
+  /* Auto-advance channels every 2.5 s */
   useEffect(() => {
-    const interval = setInterval(() => {
-      setShowStatic(true);
+    const id = setInterval(() => {
+      setSwitching(true);
       setTimeout(() => {
-        setCurrentCh(prev => (prev + 1) % TV_CHANNELS.length);
-        setShowStatic(false);
-      }, 300);
-    }, 3000);
-    return () => clearInterval(interval);
+        setChIndex(i => (i + 1) % CHANNELS.length);
+        setSwitching(false);
+      }, 350);
+    }, 2500);
+    return () => clearInterval(id);
   }, []);
 
-  /* Animate signal bars */
+  /* Fluctuate signal strength */
   useEffect(() => {
-    const tick = setInterval(() => {
-      setSignal(85 + Math.floor(Math.random() * 15));
-    }, 1500);
-    return () => clearInterval(tick);
+    const id = setInterval(() => {
+      setSignalStrength(3 + Math.floor(Math.random() * 2)); // 3 or 4 bars
+    }, 1800);
+    return () => clearInterval(id);
   }, []);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = e => {
     e.preventDefault();
-    if (ALLOWED_USERS[username] === password) {
-      const role = username === 'cable' ? 'viewer' : 'admin';
-      onLogin({ username, role });
+    const ALLOWED = { sudhakar: 'sudhakar14', kishore: 'kishore14', kirran: 'kirran14', cable: 'cable' };
+    if (ALLOWED[username] === password) {
+      onLogin({ username, role: username === 'cable' ? 'viewer' : 'admin' });
     } else {
       setError('Invalid credentials. Please try again.');
     }
   };
 
-  const ch = TV_CHANNELS[currentCh];
+  const ch = CHANNELS[chIndex];
 
   return (
-    <div style={styles.root}>
-      {/* ── Full-screen animated background ── */}
-      <div style={styles.bg}>
-        {/* Scrolling scan-line overlay */}
-        <div style={styles.scanlines}></div>
+    <div style={s.root}>
+      <style>{CSS}</style>
 
-        {/* Animated signal-wave rings */}
-        {[1, 2, 3, 4].map(i => (
-          <div key={i} style={{ ...styles.ring, animationDelay: `${i * 0.6}s`, width: i * 180, height: i * 180 }} />
-        ))}
+      {/* ─── Background: subtle dot-grid ─── */}
+      <div style={s.dotGrid} />
 
-        {/* Floating mini TV cards */}
-        {TV_CHANNELS.map((c, i) => (
-          <div
-            key={c.ch}
-            style={{
-              ...styles.floatCard,
-              left: `${10 + (i % 3) * 30}%`,
-              top: `${15 + Math.floor(i / 3) * 50}%`,
-              animationDelay: `${i * 0.8}s`,
-              animationDuration: `${6 + i}s`,
-              borderColor: c.color + '55',
-              boxShadow: `0 0 20px ${c.color}33`,
-            }}
-          >
-            <div style={{ ...styles.floatCardDot, background: c.color }} />
-            <span style={{ fontSize: '0.7rem', color: '#94a3b8', letterSpacing: '0.08em' }}>CH {c.ch}</span>
-            <span style={{ fontSize: '0.65rem', color: c.color, fontWeight: 700 }}>{c.label}</span>
-          </div>
-        ))}
-
-        {/* Moving cable wire lines */}
-        <svg style={styles.wireSvg} viewBox="0 0 1440 900" preserveAspectRatio="none">
-          <path d="M0,200 Q360,100 720,300 T1440,200" stroke="rgba(99,102,241,0.12)" strokeWidth="2" fill="none" style={{ animation: 'wirePulse 4s ease-in-out infinite' }} />
-          <path d="M0,600 Q360,500 720,700 T1440,600" stroke="rgba(6,182,212,0.1)" strokeWidth="2" fill="none" style={{ animation: 'wirePulse 5s ease-in-out infinite reverse' }} />
-          <path d="M0,400 Q480,250 960,500 T1440,350" stroke="rgba(236,72,153,0.08)" strokeWidth="1.5" fill="none" style={{ animation: 'wirePulse 6s ease-in-out infinite' }} />
-        </svg>
-
-        {/* Top-left: broadcast tower icon */}
-        <div style={styles.towerBox}>
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="1.5" strokeLinecap="round">
+      {/* ─── Background broadcast rings (top-left) ─── */}
+      <div style={s.towerArea}>
+        <div style={s.towerIcon}>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="1.8" strokeLinecap="round">
             <path d="M4.9 4.9a10 10 0 0 1 14.2 0M7.7 7.7a6 6 0 0 1 8.6 0M10.5 10.5a2 2 0 0 1 3 0" />
             <line x1="12" y1="12" x2="12" y2="22" />
             <line x1="8" y1="22" x2="16" y2="22" />
           </svg>
-          <div style={{ ...styles.towerPulse, animationDelay: '0s' }} />
-          <div style={{ ...styles.towerPulse, animationDelay: '0.5s', width: 60, height: 60 }} />
         </div>
+        <div className="ring r1" />
+        <div className="ring r2" />
+        <div className="ring r3" />
       </div>
 
-      {/* ── Main centered content ── */}
-      <div style={styles.center}>
-        {/* Mock TV screen above the card */}
-        <div style={styles.tvScreen}>
-          {showStatic ? (
-            <div style={styles.staticNoise}>
-              {Array.from({ length: 80 }).map((_, i) => (
-                <div
-                  key={i}
-                  style={{
-                    position: 'absolute',
-                    left: `${Math.random() * 100}%`,
-                    top: `${Math.random() * 100}%`,
-                    width: Math.random() > 0.5 ? 4 : 2,
-                    height: Math.random() > 0.5 ? 4 : 2,
-                    background: Math.random() > 0.5 ? '#fff' : '#333',
-                    opacity: Math.random(),
-                  }}
-                />
-              ))}
+      {/* ─── Right-side cable-signal line decoration ─── */}
+      <svg style={s.waveSvg} viewBox="0 0 400 900" preserveAspectRatio="none">
+        <path className="cable-line" d="M380,0 Q340,200 370,400 Q400,600 360,900" stroke="rgba(99,102,241,0.2)" strokeWidth="2" fill="none" strokeDasharray="8 6"/>
+        <path className="cable-line" style={{animationDelay:'-2s'}} d="M340,0 Q310,250 330,500 Q350,700 320,900" stroke="rgba(6,182,212,0.15)" strokeWidth="1.5" fill="none" strokeDasharray="6 8"/>
+      </svg>
+
+      {/* ─── Main Column ─── */}
+      <div style={s.col}>
+
+        {/* TV Unit */}
+        <div style={s.tvUnit}>
+
+          {/* TV Frame */}
+          <div style={s.tvFrame}>
+            {/* Antenna */}
+            <div style={s.antennaWrap}>
+              <div style={{ ...s.antenna, transform: 'rotate(-30deg)', left: '32%' }} />
+              <div style={{ ...s.antenna, transform: 'rotate(30deg)',  left: '58%' }} />
             </div>
-          ) : (
-            <div style={styles.tvContent}>
-              {/* TV CRT scanline */}
-              <div style={styles.crtLine} />
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                <span style={{ ...styles.tvLabel, color: ch.color }}>CH {ch.ch} • {ch.label}</span>
-                <div style={styles.recBadge}>● LIVE</div>
-              </div>
-              <div style={styles.tvBars}>
-                {[...Array(18)].map((_, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      flex: 1, borderRadius: 2,
-                      background: `hsl(${220 + i * 8}, 70%, ${35 + i * 2}%)`,
-                      height: `${30 + Math.sin(i) * 20 + Math.random() * 15}%`,
-                      alignSelf: 'flex-end',
-                    }}
-                  />
-                ))}
-              </div>
-              <div style={styles.tvBottom}>
-                <span style={{ fontSize: '0.65rem', color: '#64748b' }}>STK CABLE NETWORK</span>
-                <div style={{ display: 'flex', gap: 4 }}>
-                  {[...Array(4)].map((_, i) => (
-                    <div key={i} style={{
-                      width: 6, height: signal > (i + 1) * 20 ? 14 : 8,
-                      background: signal > (i + 1) * 20 ? '#10b981' : '#1e293b',
-                      borderRadius: 2, transition: 'height 0.4s ease',
+
+            {/* Screen */}
+            <div style={s.screen}>
+              {switching ? (
+                /* Static / channel-change flash */
+                <div style={s.static}>
+                  {Array.from({length: 60}).map((_,i) => (
+                    <span key={i} style={{
+                      position: 'absolute',
+                      left:   `${(i * 17) % 100}%`,
+                      top:    `${(i * 23) % 100}%`,
+                      width:  i % 3 === 0 ? 6 : 3,
+                      height: i % 5 === 0 ? 6 : 2,
+                      background: i % 2 ? '#fff' : '#222',
+                      opacity: 0.7,
                     }} />
                   ))}
+                  <div style={s.staticText}>— CHANGING CHANNEL —</div>
                 </div>
+              ) : (
+                <>
+                  {/* CRT scanline */}
+                  <div className="crt-sweep" />
+
+                  {/* Top bar */}
+                  <div style={s.screenTopBar}>
+                    <span style={{ ...s.chBadge, color: ch.color, borderColor: ch.color + '55', background: ch.color + '15' }}>
+                      {ch.num}
+                    </span>
+                    <span style={{ ...s.chName }}>{ch.name}</span>
+                    <span style={s.liveDot} className="blink">● LIVE</span>
+                  </div>
+
+                  {/* Channel graphic — coloured gradient fill */}
+                  <div style={{ ...s.chGraphic, background: `radial-gradient(ellipse at 40% 50%, ${ch.color}22 0%, transparent 70%)` }}>
+                    <div style={{ fontSize: '2.5rem', lineHeight: 1 }}>{ch.icon}</div>
+                    <div style={{ color: ch.color, fontSize: '1.1rem', fontWeight: 800, letterSpacing: '-0.01em' }}>{ch.name}</div>
+                    <div style={{ color: '#475569', fontSize: '0.72rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>STK Cable Network</div>
+                  </div>
+
+                  {/* Bottom signal bar */}
+                  <div style={s.screenBottom}>
+                    <div style={s.signalWrap}>
+                      {[1,2,3,4].map(b => (
+                        <div key={b} style={{
+                          width: 5,
+                          height: 6 + b * 4,
+                          borderRadius: 3,
+                          background: b <= signalStrength ? '#10b981' : '#1e293b',
+                          transition: 'background 0.4s',
+                        }} />
+                      ))}
+                      <span style={{ color: '#64748b', fontSize: '0.65rem', marginLeft: 4 }}>SIGNAL</span>
+                    </div>
+                    <span style={{ color: '#334155', fontSize: '0.65rem' }}>
+                      {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* TV bottom bezel */}
+            <div style={s.bezel}>
+              <div style={s.powerLed} className="blink-led" />
+              <div style={s.controlDots}>
+                {[0,1,2].map(i => <div key={i} style={s.dot} />)}
               </div>
-            </div>
-          )}
-          {/* TV bezel details */}
-          <div style={styles.tvBezel} />
-          <div style={styles.tvLed} />
-        </div>
-
-        {/* TV "neck" connector */}
-        <div style={styles.tvNeck} />
-
-        {/* Login Card */}
-        <div style={styles.card}>
-          <div style={styles.cardHeader}>
-            <div style={styles.logoIcon}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="7" width="20" height="15" rx="2" ry="2" />
-                <polyline points="17 2 12 7 7 2" />
-              </svg>
-            </div>
-            <div>
-              <div style={styles.cardTitle}>STK Cable System</div>
-              <div style={styles.cardSub}>Network Management Portal</div>
             </div>
           </div>
 
+          {/* TV stand */}
+          <div style={s.stand}>
+            <div style={s.standNeck} />
+            <div style={s.standBase} />
+          </div>
+        </div>
+
+        {/* ─── Login Card ─── */}
+        <div style={s.card}>
+          <div style={s.cardLogo}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2" y="7" width="20" height="15" rx="2" />
+              <polyline points="17 2 12 7 7 2" />
+            </svg>
+          </div>
+          <h2 style={s.cardTitle}>STK Cable System</h2>
+          <p style={s.cardSub}>Sign in to your network portal</p>
+
           {error && (
-            <div style={styles.errorBox}>
-              ⚠️ {error}
-            </div>
+            <div style={s.errBox}>⚠️ {error}</div>
           )}
 
           <form onSubmit={handleSubmit}>
-            <div style={styles.inputGroup}>
-              <label style={styles.inputLabel}>Username</label>
+            <div style={s.fg}>
+              <label style={s.label}>Username</label>
               <input
+                style={s.inp}
                 type="text"
-                style={styles.input}
                 value={username}
                 onChange={e => setUsername(e.target.value)}
-                placeholder="Enter your username"
+                placeholder="Enter username"
                 required
                 autoComplete="username"
-                onFocus={e => e.target.style.borderColor = '#6366f1'}
-                onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
+                onFocus={e => { e.target.style.borderColor = '#6366f1'; e.target.style.boxShadow = '0 0 0 3px rgba(99,102,241,0.15)'; }}
+                onBlur={e  => { e.target.style.borderColor = 'rgba(255,255,255,0.09)'; e.target.style.boxShadow = 'none'; }}
               />
             </div>
-            <div style={{ ...styles.inputGroup, marginBottom: '1.75rem' }}>
-              <label style={styles.inputLabel}>Password</label>
+            <div style={{ ...s.fg, marginBottom: '1.5rem' }}>
+              <label style={s.label}>Password</label>
               <input
+                style={s.inp}
                 type="password"
-                style={styles.input}
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
                 autoComplete="current-password"
-                onFocus={e => e.target.style.borderColor = '#6366f1'}
-                onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
+                onFocus={e => { e.target.style.borderColor = '#6366f1'; e.target.style.boxShadow = '0 0 0 3px rgba(99,102,241,0.15)'; }}
+                onBlur={e  => { e.target.style.borderColor = 'rgba(255,255,255,0.09)'; e.target.style.boxShadow = 'none'; }}
               />
             </div>
-            <button type="submit" style={styles.submitBtn}
-              onMouseEnter={e => e.target.style.transform = 'translateY(-2px)'}
-              onMouseLeave={e => e.target.style.transform = 'translateY(0)'}
+            <button type="submit" style={s.btn}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 10px 30px rgba(99,102,241,0.55)'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(99,102,241,0.4)'; }}
             >
-              <span style={styles.btnShimmer} />
+              <span style={s.shimmer} className="shimmer" />
               📡 Connect to Network
             </button>
           </form>
         </div>
       </div>
-
-      {/* Keyframe injector */}
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-        * { font-family: 'Inter', sans-serif; }
-        @keyframes ringPulse {
-          0%   { transform: scale(0.6); opacity: 0.5; }
-          100% { transform: scale(1.8); opacity: 0; }
-        }
-        @keyframes floatUp {
-          0%,100% { transform: translateY(0px) rotate(-1deg); }
-          50%      { transform: translateY(-14px) rotate(1deg); }
-        }
-        @keyframes wirePulse {
-          0%,100% { stroke-dashoffset: 0; opacity: 0.7; }
-          50%      { stroke-dashoffset: 30; opacity: 1; }
-        }
-        @keyframes towerPing {
-          0%   { transform: translate(-50%, -50%) scale(0.5); opacity: 0.8; }
-          100% { transform: translate(-50%, -50%) scale(2.5); opacity: 0; }
-        }
-        @keyframes scanMove {
-          0%   { background-position: 0 0; }
-          100% { background-position: 0 100px; }
-        }
-        @keyframes crtScroll {
-          from { top: -100%; }
-          to   { top: 200%; }
-        }
-        @keyframes ledBlink {
-          0%,100% { opacity: 1; }
-          50%      { opacity: 0.2; }
-        }
-        @keyframes shimmer {
-          from { left: -100%; }
-          to   { left: 150%; }
-        }
-      `}</style>
     </div>
   );
 }
 
-/* ── STYLES ── */
-const styles = {
+/* ──────────────────────────────── STYLES ──────────────────────────────── */
+const s = {
   root: {
     minHeight: '100vh',
-    background: 'linear-gradient(135deg, #05070f 0%, #0b0f1e 50%, #070d1a 100%)',
+    background: 'linear-gradient(135deg, #06080f 0%, #0b0f1e 60%, #070b18 100%)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontFamily: "'Inter', system-ui, sans-serif",
     position: 'relative', overflow: 'hidden',
-    fontFamily: "'Inter', sans-serif",
   },
-  bg: {
+  dotGrid: {
     position: 'absolute', inset: 0, pointerEvents: 'none',
+    backgroundImage: 'radial-gradient(rgba(99,102,241,0.12) 1px, transparent 1px)',
+    backgroundSize: '32px 32px',
+    mask: 'radial-gradient(ellipse 80% 80% at 50% 50%, #000 40%, transparent 100%)',
   },
-  scanlines: {
-    position: 'absolute', inset: 0, pointerEvents: 'none',
-    background: 'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.08) 3px, rgba(0,0,0,0.08) 4px)',
-    animation: 'scanMove 8s linear infinite',
-    zIndex: 1,
-  },
-  ring: {
-    position: 'absolute',
-    top: '50%', left: '50%',
-    transform: 'translate(-50%, -50%)',
-    border: '1.5px solid rgba(99,102,241,0.18)',
-    borderRadius: '50%',
-    animation: 'ringPulse 4s ease-out infinite',
-    pointerEvents: 'none',
-  },
-  floatCard: {
-    position: 'absolute',
-    display: 'flex', flexDirection: 'column', gap: 4,
-    padding: '10px 14px',
-    background: 'rgba(13, 19, 34, 0.75)',
-    border: '1px solid',
-    borderRadius: 10,
-    backdropFilter: 'blur(8px)',
-    animation: 'floatUp ease-in-out infinite',
-    zIndex: 0,
-  },
-  floatCardDot: {
-    width: 6, height: 6, borderRadius: '50%',
-  },
-  wireSvg: {
-    position: 'absolute', inset: 0,
-    width: '100%', height: '100%',
-    strokeDasharray: '10 5',
-  },
-  towerBox: {
-    position: 'absolute', top: 30, right: 40,
+  towerArea: {
+    position: 'absolute', top: 30, left: 40,
+    width: 120, height: 120,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    width: 60, height: 60,
   },
-  towerPulse: {
-    position: 'absolute', top: '50%', left: '50%',
-    transform: 'translate(-50%, -50%)',
-    width: 40, height: 40, borderRadius: '50%',
-    border: '2px solid rgba(99,102,241,0.4)',
-    animation: 'towerPing 2s ease-out infinite',
+  towerIcon: {
+    position: 'relative', zIndex: 2,
+    width: 48, height: 48, borderRadius: 12,
+    background: 'rgba(99,102,241,0.12)',
+    border: '1px solid rgba(99,102,241,0.25)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
   },
-  center: {
-    position: 'relative', zIndex: 10,
+  waveSvg: {
+    position: 'absolute', right: 0, top: 0, bottom: 0,
+    width: 400, height: '100%', pointerEvents: 'none',
+  },
+  col: {
+    display: 'flex', flexDirection: 'column', alignItems: 'center',
+    gap: 0, position: 'relative', zIndex: 10,
+  },
+
+  /* ─── TV ─── */
+  tvUnit: {
     display: 'flex', flexDirection: 'column', alignItems: 'center',
   },
-  tvScreen: {
-    width: 360,
-    height: 200,
-    background: '#0a0e1a',
-    border: '8px solid #1e2940',
-    borderBottom: '6px solid #1e2940',
-    borderRadius: '14px 14px 4px 4px',
-    position: 'relative',
+  tvFrame: {
+    width: 380, position: 'relative',
+    background: 'linear-gradient(160deg, #1a2238 0%, #0f1729 100%)',
+    border: '2px solid #253352',
+    borderRadius: '16px 16px 8px 8px',
+    padding: '24px 18px 12px',
+    boxShadow: '0 0 60px rgba(99,102,241,0.2), 0 20px 50px rgba(0,0,0,0.7)',
+  },
+  antennaWrap: {
+    position: 'absolute', top: -32, left: 0, right: 0,
+    display: 'flex', justifyContent: 'center',
+  },
+  antenna: {
+    position: 'absolute',
+    width: 3, height: 34,
+    background: 'linear-gradient(180deg, #64748b, #1e293b)',
+    borderRadius: 4, transformOrigin: 'bottom center',
+    bottom: 0,
+  },
+  screen: {
+    width: '100%', height: 195,
+    background: '#050810',
+    borderRadius: 8,
     overflow: 'hidden',
-    boxShadow: '0 0 60px rgba(99,102,241,0.3), inset 0 0 30px rgba(0,0,0,0.5)',
+    position: 'relative',
+    boxShadow: 'inset 0 0 40px rgba(0,0,0,0.6), 0 0 0 2px #0a0e1a',
   },
-  tvContent: {
+  static: {
     position: 'absolute', inset: 0,
-    padding: '10px 14px',
-    display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+    background: '#080c16',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
   },
-  tvLabel: {
-    fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em',
+  staticText: {
+    position: 'relative', zIndex: 2,
+    fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)',
+    letterSpacing: '0.15em', fontWeight: 600,
   },
-  recBadge: {
+  screenTopBar: {
+    display: 'flex', alignItems: 'center', gap: 8,
+    padding: '8px 12px 6px',
+  },
+  chBadge: {
+    fontSize: '0.65rem', fontWeight: 800,
+    padding: '2px 8px', borderRadius: 99,
+    border: '1px solid',
+    letterSpacing: '0.06em',
+  },
+  chName: {
+    fontSize: '0.72rem', fontWeight: 700,
+    color: '#94a3b8', letterSpacing: '0.08em',
+    flex: 1,
+  },
+  liveDot: {
     fontSize: '0.6rem', color: '#ef4444', fontWeight: 700,
-    background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)',
-    padding: '2px 6px', borderRadius: 99,
-    animation: 'ledBlink 1.2s ease-in-out infinite',
   },
-  tvBars: {
-    display: 'flex', gap: 3, height: 70, alignItems: 'flex-end',
+  chGraphic: {
+    position: 'absolute', inset: 0,
+    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+    gap: 8, paddingTop: 28,
   },
-  tvBottom: {
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-  },
-  crtLine: {
-    position: 'absolute', left: 0, right: 0,
-    height: 2,
-    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent)',
-    animation: 'crtScroll 3s linear infinite',
-    pointerEvents: 'none',
-  },
-  tvBezel: {
+  screenBottom: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
-    height: 3,
-    background: 'linear-gradient(90deg, rgba(99,102,241,0.5), rgba(6,182,212,0.5), rgba(99,102,241,0.5))',
-    animation: 'shimmer 3s linear infinite',
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    padding: '6px 12px',
+    background: 'rgba(0,0,0,0.5)',
+    borderTop: '1px solid rgba(255,255,255,0.05)',
   },
-  tvLed: {
-    position: 'absolute', bottom: -18, right: 20,
+  signalWrap: {
+    display: 'flex', alignItems: 'flex-end', gap: 3,
+  },
+  bezel: {
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    padding: '8px 4px 0',
+  },
+  powerLed: {
     width: 8, height: 8, borderRadius: '50%',
     background: '#10b981',
     boxShadow: '0 0 8px #10b981',
-    animation: 'ledBlink 2s ease-in-out infinite',
   },
-  staticNoise: {
-    position: 'absolute', inset: 0,
-    background: '#111',
-    overflow: 'hidden',
+  controlDots: {
+    display: 'flex', gap: 8,
   },
-  tvNeck: {
-    width: 60, height: 14,
-    background: 'linear-gradient(180deg, #1e2940, #253352)',
-    clipPath: 'polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%)',
+  dot: {
+    width: 8, height: 8, borderRadius: '50%',
+    background: '#253352',
+    border: '1px solid #334155',
   },
+  stand: {
+    display: 'flex', flexDirection: 'column', alignItems: 'center',
+  },
+  standNeck: {
+    width: 56, height: 14,
+    background: 'linear-gradient(180deg, #1a2238, #253352)',
+    clipPath: 'polygon(25% 0%, 75% 0%, 100% 100%, 0% 100%)',
+  },
+  standBase: {
+    width: 120, height: 8,
+    background: 'linear-gradient(90deg, #0f1729, #1a2238, #0f1729)',
+    borderRadius: '0 0 8px 8px',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+  },
+
+  /* ─── Login Card ─── */
   card: {
-    width: 380,
-    background: 'rgba(13, 19, 34, 0.92)',
-    border: '1px solid rgba(255,255,255,0.1)',
-    borderRadius: '0 0 18px 18px',
-    padding: '1.75rem 2rem 2rem',
+    width: 380, marginTop: 0,
+    background: 'rgba(11, 16, 30, 0.9)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    borderTop: 'none',
+    borderRadius: '0 0 20px 20px',
+    padding: '1.5rem 2rem 2rem',
     backdropFilter: 'blur(20px)',
-    boxShadow: '0 20px 60px rgba(0,0,0,0.7), 0 0 40px rgba(99,102,241,0.15)',
+    boxShadow: '0 24px 60px rgba(0,0,0,0.6)',
   },
-  cardHeader: {
-    display: 'flex', alignItems: 'center', gap: '0.85rem',
-    marginBottom: '1.5rem',
-    paddingBottom: '1.25rem',
-    borderBottom: '1px solid rgba(255,255,255,0.07)',
-  },
-  logoIcon: {
-    width: 42, height: 42, borderRadius: 12,
+  cardLogo: {
+    width: 40, height: 40, borderRadius: 10,
     background: 'linear-gradient(135deg, #4f46e5, #818cf8)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    boxShadow: '0 4px 14px rgba(99,102,241,0.4)',
-    flexShrink: 0,
+    margin: '0 auto 1rem',
+    boxShadow: '0 4px 16px rgba(99,102,241,0.4)',
   },
   cardTitle: {
-    fontSize: '1.05rem', fontWeight: 800, color: '#f8fafc', letterSpacing: '-0.01em',
+    fontSize: '1.25rem', fontWeight: 800,
+    color: '#f8fafc', textAlign: 'center',
+    marginBottom: '0.25rem', letterSpacing: '-0.02em',
   },
   cardSub: {
-    fontSize: '0.75rem', color: '#64748b', marginTop: 2,
+    fontSize: '0.8rem', color: '#64748b',
+    textAlign: 'center', marginBottom: '1.5rem',
   },
-  errorBox: {
-    background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
-    borderRadius: 8, padding: '0.7rem 1rem',
-    color: '#f87171', fontSize: '0.82rem', marginBottom: '1.25rem',
+  errBox: {
+    background: 'rgba(239,68,68,0.1)',
+    border: '1px solid rgba(239,68,68,0.3)',
+    borderRadius: 8, padding: '0.65rem 0.9rem',
+    color: '#f87171', fontSize: '0.82rem',
+    marginBottom: '1.25rem',
   },
-  inputGroup: {
+  fg: {
     marginBottom: '1rem',
+    display: 'flex', flexDirection: 'column', gap: '0.4rem',
   },
-  inputLabel: {
-    display: 'block', fontSize: '0.75rem', fontWeight: 600,
-    color: '#64748b', marginBottom: '0.4rem', letterSpacing: '0.03em',
+  label: {
+    fontSize: '0.75rem', fontWeight: 600,
+    color: '#64748b', letterSpacing: '0.03em',
   },
-  input: {
+  inp: {
     width: '100%', padding: '0.65rem 0.9rem',
-    background: 'rgba(15, 22, 36, 0.9)',
-    border: '1px solid rgba(255,255,255,0.1)',
+    background: 'rgba(10, 14, 26, 0.9)',
+    border: '1px solid rgba(255,255,255,0.09)',
     borderRadius: 8, color: '#f8fafc',
     fontSize: '0.9rem', outline: 'none',
-    fontFamily: "'Inter', sans-serif",
+    fontFamily: "'Inter', system-ui, sans-serif",
     transition: 'border-color 0.2s, box-shadow 0.2s',
     boxSizing: 'border-box',
   },
-  submitBtn: {
+  btn: {
     width: '100%', padding: '0.75rem',
     background: 'linear-gradient(135deg, #4f46e5, #818cf8)',
     color: '#fff', border: 'none', borderRadius: 8,
     fontSize: '0.95rem', fontWeight: 700, cursor: 'pointer',
-    boxShadow: '0 6px 24px rgba(99,102,241,0.4)',
+    boxShadow: '0 6px 20px rgba(99,102,241,0.4)',
     transition: 'transform 0.2s, box-shadow 0.2s',
     position: 'relative', overflow: 'hidden',
-    fontFamily: "'Inter', sans-serif",
+    fontFamily: "'Inter', system-ui, sans-serif",
+    letterSpacing: '-0.01em',
   },
-  btnShimmer: {
-    position: 'absolute', top: 0, bottom: 0,
-    width: '40%',
-    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)',
-    animation: 'shimmer 2.5s ease-in-out infinite',
+  shimmer: {
+    position: 'absolute', top: 0, bottom: 0, width: '40%',
+    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent)',
     pointerEvents: 'none',
   },
 };
+
+const CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+  /* Broadcast rings */
+  .ring {
+    position: absolute; top: 50%; left: 50%;
+    border-radius: 50%;
+    border: 1.5px solid rgba(99,102,241,0.35);
+    transform: translate(-50%, -50%);
+    animation: ringOut 3s ease-out infinite;
+  }
+  .r1 { width: 60px;  height: 60px;  animation-delay: 0s; }
+  .r2 { width: 95px;  height: 95px;  animation-delay: 0.9s; }
+  .r3 { width: 130px; height: 130px; animation-delay: 1.8s; }
+
+  @keyframes ringOut {
+    0%   { opacity: 0.7; transform: translate(-50%,-50%) scale(0.6); }
+    100% { opacity: 0;   transform: translate(-50%,-50%) scale(1); }
+  }
+
+  /* CRT scan-line sweep */
+  .crt-sweep {
+    position: absolute; left: 0; right: 0; height: 3px;
+    background: linear-gradient(180deg, transparent, rgba(255,255,255,0.06) 50%, transparent);
+    animation: crtDown 2.5s linear infinite;
+    pointer-events: none; z-index: 5;
+  }
+  @keyframes crtDown {
+    from { top: -4px; }
+    to   { top: 100%; }
+  }
+
+  /* Live badge blink */
+  .blink { animation: ledBlink 1.2s ease-in-out infinite; }
+  .blink-led { animation: ledBlink 2s ease-in-out infinite; }
+  @keyframes ledBlink {
+    0%,100% { opacity: 1; }
+    50%      { opacity: 0.25; }
+  }
+
+  /* Shimmer on button */
+  .shimmer { animation: shimmerSlide 2.5s ease-in-out infinite; }
+  @keyframes shimmerSlide {
+    from { left: -60%; }
+    to   { left: 140%; }
+  }
+
+  /* Cable wire path dash animation */
+  .cable-line { animation: dashMove 4s linear infinite; }
+  @keyframes dashMove {
+    from { stroke-dashoffset: 0; }
+    to   { stroke-dashoffset: -60; }
+  }
+`;
