@@ -1,9 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { getApiBaseUrl, fetchCustomersData } from '../apiConfig';
+import { 
+  fetchCustomersData, 
+  updateCustomerApi, 
+  addCustomerApi, 
+  deleteCustomerApi, 
+  triggerMonthlyResetApi, 
+  fetchCustomerHistoryApi 
+} from '../apiConfig';
 
 export default function Customers() {
-  const API_BASE_URL = getApiBaseUrl();
   const { user } = useOutletContext();
   const isAdmin = user?.role === 'admin';
   const [customers, setCustomers] = useState([]);
@@ -75,35 +81,28 @@ export default function Customers() {
     setShowModal(true);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (selectedIds.length === 0) return;
     if (window.confirm(`Are you sure you want to delete ${selectedIds.length} customer(s)?`)) {
-      Promise.all(selectedIds.map(id =>
-        fetch(`${API_BASE_URL}/customers/${id}`, { method: 'DELETE' })
-          .catch(() => fetch(`https://stk-cable-system.onrender.com/api/customers/${id}`, { method: 'DELETE' }))
-      )).then(() => {
-        setSelectedIds([]);
-        fetchCustomers();
-      });
+      await Promise.all(selectedIds.map(id => deleteCustomerApi(id)));
+      setSelectedIds([]);
+      fetchCustomers();
     }
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    const method = currentCustomer ? 'PUT' : 'POST';
-    const endpoint = currentCustomer ? `/customers/${currentCustomer.id}` : '/customers';
-
-    fetch(`${API_BASE_URL}${endpoint}`, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formData)
-    })
-      .then(res => {
-        if (!res.ok) throw new Error('Save failed');
-        return res.json();
-      })
-      .then(() => { setShowModal(false); fetchCustomers(); })
-      .catch(() => setSaveError('Error saving subscriber details.'));
+    try {
+      if (currentCustomer) {
+        await updateCustomerApi(currentCustomer.id, formData);
+      } else {
+        await addCustomerApi(formData);
+      }
+      setShowModal(false);
+      fetchCustomers();
+    } catch (err) {
+      setSaveError('Error saving subscriber details.');
+    }
   };
 
   // Renamed button action: Download CSV
@@ -121,7 +120,7 @@ export default function Customers() {
     document.body.removeChild(link);
   };
 
-  const handleMonthChange = (id, newMonthVal) => {
+  const handleMonthChange = async (id, newMonthVal) => {
     const newMonth = parseInt(newMonthVal, 10);
     const customer = customers.find(c => c.id === id);
     if (!customer) return;
@@ -135,67 +134,50 @@ export default function Customers() {
     const calculatedTotal = Math.round(baseRate * newMonth);
 
     setCustomers(customers.map(c => c.id === id ? { ...c, month: newMonth, totalAmount: calculatedTotal } : c));
-
-    fetch(`${API_BASE_URL}/customers/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ month: newMonth, totalAmount: calculatedTotal })
-    }).catch(() => fetchCustomers());
+    await updateCustomerApi(id, { month: newMonth, totalAmount: calculatedTotal });
   };
 
-  const handleToggle = (id, field, currentValue) => {
+  const handleToggle = async (id, field, currentValue) => {
     let newValue = field === 'status' 
       ? (currentValue === 'Active' ? 'Deactive' : 'Active')
       : (currentValue === 'Paid' ? 'Not Paid' : 'Paid');
 
     setCustomers(customers.map(c => c.id === id ? { ...c, [field]: newValue } : c));
-
-    fetch(`${API_BASE_URL}/customers/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ [field]: newValue })
-    }).catch(() => fetchCustomers());
+    await updateCustomerApi(id, { [field]: newValue });
   };
 
   const handleInlineChange = (id, field, value) => {
     setInlineEdits(prev => ({ ...prev, [`${id}-${field}`]: value }));
   };
 
-  const saveInlineEdit = (id, field) => {
+  const saveInlineEdit = async (id, field) => {
     const valString = inlineEdits[`${id}-${field}`];
     if (valString === undefined) return;
 
     const numValue = parseFloat(valString) || 0;
     setCustomers(customers.map(c => c.id === id ? { ...c, [field]: numValue } : c));
 
-    fetch(`${API_BASE_URL}/customers/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ [field]: numValue })
-    }).then(() => {
-      setInlineEdits(prev => {
-        const next = { ...prev };
-        delete next[`${id}-${field}`];
-        return next;
-      });
-    }).catch(() => fetchCustomers());
+    await updateCustomerApi(id, { [field]: numValue });
+    setInlineEdits(prev => {
+      const next = { ...prev };
+      delete next[`${id}-${field}`];
+      return next;
+    });
   };
 
-  const fetchHistory = (customer) => {
+  const fetchHistory = async (customer) => {
     setCurrentCustomer(customer);
     setCustomerHistory([]);
-    fetch(`${API_BASE_URL}/customers/${customer.id}/history`)
-      .then(r => r.json())
-      .then(data => { setCustomerHistory(data); setShowHistoryModal(true); })
-      .catch(() => alert("Failed to fetch history"));
+    const history = await fetchCustomerHistoryApi(customer.id);
+    setCustomerHistory(history);
+    setShowHistoryModal(true);
   };
 
-  const triggerMonthlyReset = () => {
+  const triggerMonthlyReset = async () => {
     if (window.confirm("Trigger monthly reset for all customers?")) {
       setLoading(true);
-      fetch(`${API_BASE_URL}/trigger-monthly-reset`, { method: 'POST' })
-        .then(() => fetchCustomers())
-        .catch(() => setLoading(false));
+      await triggerMonthlyResetApi();
+      await fetchCustomers();
     }
   };
 
