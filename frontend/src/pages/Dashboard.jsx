@@ -128,22 +128,22 @@ export default function Dashboard() {
         {/* Analytics Chart Panel */}
         <div className="card-panel" style={{ display: 'flex', flexDirection: 'column' }}>
           <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.35rem' }}>Visual Analytics Comparison</h3>
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>Distribution of active, inactive, paid and unpaid statuses per provider</p>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>Distribution of active, inactive, paid and unpaid statuses per provider</p>
           
-          <div style={{ width: '100%', height: 320, flex: 1 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 15, right: 25, left: -10, bottom: 5 }}>
-                <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={12} tickLine={false} />
-                <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} />
+          <div className="chart-container-wrap" style={{ width: '100%', height: 300, minHeight: 280, position: 'relative' }}>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={chartData} margin={{ top: 15, right: 15, left: -20, bottom: 5 }}>
+                <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={11} tickLine={false} />
+                <YAxis stroke="var(--text-muted)" fontSize={11} tickLine={false} />
                 <Tooltip
                   cursor={{ fill: 'rgba(255,255,255,0.03)' }}
                   contentStyle={{ backgroundColor: '#131a2b', border: '1px solid var(--border)', borderRadius: '10px', fontSize: '12px' }}
                 />
-                <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
-                <Bar dataKey="Active" fill="var(--primary-light)" radius={[5, 5, 0, 0]} />
-                <Bar dataKey="Inactive" fill="#475569" radius={[5, 5, 0, 0]} />
-                <Bar dataKey="Paid" fill="#10b981" radius={[5, 5, 0, 0]} />
-                <Bar dataKey="Unpaid" fill="#ef4444" radius={[5, 5, 0, 0]} />
+                <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '6px' }} />
+                <Bar dataKey="Active" fill="var(--primary-light)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Inactive" fill="#475569" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Paid" fill="#10b981" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Unpaid" fill="#ef4444" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
