@@ -16,10 +16,7 @@ export default function Customers() {
   const [customerHistory, setCustomerHistory] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
 
-  // Inline Editing State
   const [inlineEdits, setInlineEdits] = useState({});
-
-  // Error States
   const [saveError, setSaveError] = useState('');
 
   // Filters
@@ -39,16 +36,12 @@ export default function Customers() {
     setLoading(true);
     fetch(`${API_BASE_URL}/customers`)
       .then(res => res.json())
-      .then(data => {
-        setCustomers(data);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error('Failed to fetch from local server, trying remote...', err);
+      .then(data => { setCustomers(data); setLoading(false); })
+      .catch(() => {
         fetch('https://stk-cable-system.onrender.com/api/customers')
           .then(r => r.json())
           .then(data => { setCustomers(data); setLoading(false); })
-          .catch(e => { console.error(e); setLoading(false); });
+          .catch(() => setLoading(false));
       });
   };
 
@@ -76,14 +69,11 @@ export default function Customers() {
 
   const handleEdit = () => {
     if (selectedIds.length !== 1) {
-      alert("Please select exactly one customer to edit");
+      alert("Select exactly 1 customer to edit");
       return;
     }
     const customer = customers.find(c => c.id === selectedIds[0]);
-    setFormData({
-      ...customer,
-      month: customer.month || 1
-    });
+    setFormData({ ...customer, month: customer.month || 1 });
     setCurrentCustomer(customer);
     setSaveError('');
     setShowModal(true);
@@ -91,7 +81,7 @@ export default function Customers() {
 
   const handleDelete = () => {
     if (selectedIds.length === 0) return;
-    if (window.confirm(`Are you sure you want to delete ${selectedIds.length} customer(s)?`)) {
+    if (window.confirm(`Delete ${selectedIds.length} selected customer(s)?`)) {
       Promise.all(selectedIds.map(id =>
         fetch(`${API_BASE_URL}/customers/${id}`, { method: 'DELETE' })
           .catch(() => fetch(`https://stk-cable-system.onrender.com/api/customers/${id}`, { method: 'DELETE' }))
@@ -113,66 +103,22 @@ export default function Customers() {
       body: JSON.stringify(formData)
     })
       .then(res => {
-        if (!res.ok) throw new Error('Failed to save to database.');
+        if (!res.ok) throw new Error('Save failed');
         return res.json();
       })
-      .then(() => {
-        setShowModal(false);
-        fetchCustomers();
-      })
-      .catch(err => {
-        console.error('Error saving customer locally, trying Render backend...', err);
-        fetch(`https://stk-cable-system.onrender.com/api${endpoint}`, {
-          method,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData)
-        })
-          .then(() => { setShowModal(false); fetchCustomers(); })
-          .catch(() => setSaveError('Failed to connect to the backend server.'));
-      });
+      .then(() => { setShowModal(false); fetchCustomers(); })
+      .catch(() => setSaveError('Error saving to server.'));
   };
 
   const exportToExcel = () => {
     let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "STK CABLE SYSTEM - CUSTOMER REPORT\n\n";
-    csvContent += "CUSTOMER ID,REQUIRED NAME,PLACE,PHONE NUMBER,BOX NUMBER (MAC),PROVIDER,ACCOUNT STATUS,MONTH,TOTAL AMOUNT (INR),MONTHLY PAYMENT (INR),PAYMENT STATUS\n";
-
+    csvContent += "ID,NAME,PLACE,PHONE,BOX_NUMBER,PROVIDER,STATUS,MONTH,TOTAL_AMOUNT,MONTHLY_PAYMENT,PAID\n";
     customers.forEach(row => {
-      const dataString = `"${row.id}","${row.name}","${row.place}","${row.phone}","${row.boxNumber}","${(row.provider || '').toUpperCase()}","${row.status}",${row.month || 1},${row.totalAmount},${row.monthlyPayment},"${row.paid}"`;
-      csvContent += dataString + "\n";
+      csvContent += `"${row.id}","${row.name}","${row.place}","${row.phone}","${row.boxNumber}","${(row.provider || '').toUpperCase()}","${row.status}",${row.month || 1},${row.totalAmount},${row.monthlyPayment},"${row.paid}"\n`;
     });
-
-    const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    const dateStr = new Date().toISOString().split('T')[0];
-    link.setAttribute("download", `STK_Customers_Report_${dateStr}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const exportHistory = () => {
-    if (!currentCustomer || customerHistory.length === 0) {
-      alert("No history to export");
-      return;
-    }
-    let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += `STK CABLE SYSTEM - PAYMENT HISTORY\n`;
-    csvContent += `CUSTOMER: ${currentCustomer.name} (${currentCustomer.boxNumber})\n\n`;
-    csvContent += "DATE RECORDED,AMOUNT SAVED (INR)\n";
-
-    customerHistory.forEach(row => {
-      const dbDate = new Date(row.date);
-      const formattedDate = dbDate.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-      const dataString = `"${formattedDate}",${row.amount}`;
-      csvContent += dataString + "\n";
-    });
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `Payment_History_${currentCustomer.name.replace(/\s+/g, '_')}.csv`);
+    link.setAttribute("href", encodeURI(csvContent));
+    link.setAttribute("download", `STK_Customers_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -197,19 +143,13 @@ export default function Customers() {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ month: newMonth, totalAmount: calculatedTotal })
-    }).catch(err => {
-      console.error('Failed to update month', err);
-      fetchCustomers();
-    });
+    }).catch(() => fetchCustomers());
   };
 
   const handleToggle = (id, field, currentValue) => {
-    let newValue;
-    if (field === 'status') {
-      newValue = currentValue === 'Active' ? 'Deactive' : 'Active';
-    } else if (field === 'paid') {
-      newValue = currentValue === 'Paid' ? 'Not Paid' : 'Paid';
-    }
+    let newValue = field === 'status' 
+      ? (currentValue === 'Active' ? 'Deactive' : 'Active')
+      : (currentValue === 'Paid' ? 'Not Paid' : 'Paid');
 
     setCustomers(customers.map(c => c.id === id ? { ...c, [field]: newValue } : c));
 
@@ -217,17 +157,11 @@ export default function Customers() {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ [field]: newValue })
-    }).catch(err => {
-      console.error('Failed to toggle', err);
-      fetchCustomers();
-    });
+    }).catch(() => fetchCustomers());
   };
 
   const handleInlineChange = (id, field, value) => {
-    setInlineEdits(prev => ({
-      ...prev,
-      [`${id}-${field}`]: value
-    }));
+    setInlineEdits(prev => ({ ...prev, [`${id}-${field}`]: value }));
   };
 
   const saveInlineEdit = (id, field) => {
@@ -247,45 +181,27 @@ export default function Customers() {
         delete next[`${id}-${field}`];
         return next;
       });
-    }).catch(err => {
-      console.error('Failed to update inline edit', err);
-      fetchCustomers();
-    });
+    }).catch(() => fetchCustomers());
   };
 
   const fetchHistory = (customer) => {
     setCurrentCustomer(customer);
     setCustomerHistory([]);
-    setLoading(true);
     fetch(`${API_BASE_URL}/customers/${customer.id}/history`)
       .then(r => r.json())
-      .then(data => {
-        setCustomerHistory(data);
-        setLoading(false);
-        setShowHistoryModal(true);
-      })
-      .catch(e => {
-        console.error(e);
-        setLoading(false);
-        alert("Failed to load history");
-      });
+      .then(data => { setCustomerHistory(data); setShowHistoryModal(true); })
+      .catch(() => alert("Failed to fetch history"));
   };
 
   const triggerMonthlyReset = () => {
-    if (window.confirm("Are you sure you want to trigger the monthly reset? This will decrement multi-month subscriptions and log paid amounts into history.")) {
+    if (window.confirm("Trigger monthly reset for all customers?")) {
       setLoading(true);
-      fetch(`${API_BASE_URL}/trigger-monthly-reset`, {
-        method: 'POST'
-      }).then(() => {
-        fetchCustomers();
-      }).catch(err => {
-        console.error('Failed to trigger reset', err);
-        setLoading(false);
-      });
+      fetch(`${API_BASE_URL}/trigger-monthly-reset`, { method: 'POST' })
+        .then(() => fetchCustomers())
+        .catch(() => setLoading(false));
     }
   };
 
-  // Filtered Data
   const filteredCustomers = customers.filter(c => {
     let matchesSearch = true;
     if (searchQuery) {
@@ -294,12 +210,8 @@ export default function Customers() {
       else if (searchCategory === 'place') matchesSearch = c.place?.toLowerCase().includes(q);
       else if (searchCategory === 'phone') matchesSearch = c.phone?.includes(q);
       else if (searchCategory === 'boxNo') matchesSearch = c.boxNumber?.toString().includes(q);
-      else if (searchCategory === 'amount') matchesSearch = c.totalAmount?.toString().includes(q) || c.monthlyPayment?.toString().includes(q);
-      else if (searchCategory === 'all') {
-         matchesSearch = c.name?.toLowerCase().includes(q) || c.place?.toLowerCase().includes(q) || c.phone?.includes(q) || c.boxNumber?.toString().includes(q) || c.totalAmount?.toString().includes(q);
-      }
+      else matchesSearch = c.name?.toLowerCase().includes(q) || c.place?.toLowerCase().includes(q) || c.phone?.includes(q) || c.boxNumber?.toString().includes(q);
     }
-
     const matchesStatus = statusFilter === 'All' || c.status?.toLowerCase() === statusFilter.toLowerCase();
     const matchesPayment = paymentFilter === 'All' || c.paid?.toLowerCase() === paymentFilter.toLowerCase();
     const matchesProvider = providerFilter === 'All' || c.provider?.toLowerCase() === providerFilter.toLowerCase();
@@ -308,106 +220,74 @@ export default function Customers() {
   });
 
   return (
-    <div>
-      <div className="page-header">
-        <div className="page-header-left">
-          <h2>Customer Directory</h2>
-          <p>Manage setup box accounts, monthly billing rates & payment statuses</p>
-        </div>
-        <div className="page-header-actions">
-          <button className="btn btn-ghost" onClick={exportToExcel}>
-            📥 Export CSV
-          </button>
-          {isAdmin && (
-            <button className="btn btn-warning" onClick={triggerMonthlyReset}>
-              🔄 Trigger Reset
-            </button>
+    <div className="customers-container">
+      {/* Compact Top Toolbar */}
+      <div className="toolbar-compact">
+        <input
+          type="text"
+          className="input-compact"
+          placeholder="🔍 Search subscribers..."
+          style={{ width: '190px' }}
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+
+        <select className="select-compact" value={searchCategory} onChange={e => setSearchCategory(e.target.value)}>
+          <option value="all">Field: All</option>
+          <option value="name">Name</option>
+          <option value="place">Place</option>
+          <option value="phone">Phone</option>
+          <option value="boxNo">Box ID</option>
+        </select>
+
+        <select className="select-compact" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+          <option value="All">Status: All</option>
+          <option value="Active">Active</option>
+          <option value="Deactive">Deactive</option>
+        </select>
+
+        <select className="select-compact" value={paymentFilter} onChange={e => setPaymentFilter(e.target.value)}>
+          <option value="All">Payment: All</option>
+          <option value="Paid">Paid</option>
+          <option value="Not Paid">Not Paid</option>
+        </select>
+
+        <select className="select-compact" value={providerFilter} onChange={e => setProviderFilter(e.target.value)}>
+          <option value="All">Provider: All</option>
+          <option value="TCCL">TCCL</option>
+          <option value="GPTL">GPTL</option>
+        </select>
+
+        {/* Action Buttons */}
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.4rem' }}>
+          {selectedIds.length > 0 && isAdmin && (
+            <>
+              {selectedIds.length === 1 && (
+                <button className="btn btn-ghost btn-sm" onClick={handleEdit}>✏️ Edit</button>
+              )}
+              <button className="btn btn-danger btn-sm" onClick={handleDelete}>🗑️ ({selectedIds.length})</button>
+            </>
           )}
-          {isAdmin && (
-            <button className="btn btn-primary" onClick={handleAdd}>
-              ✨ Add Customer
-            </button>
-          )}
+          <button className="btn btn-ghost btn-sm" onClick={exportToExcel}>📥 CSV</button>
+          {isAdmin && <button className="btn btn-warning btn-sm" onClick={triggerMonthlyReset}>🔄 Reset</button>}
+          {isAdmin && <button className="btn btn-primary btn-sm" onClick={handleAdd}>+ Add</button>}
         </div>
       </div>
 
-      {/* Toolbar / Search & Filter Controls */}
-      <div className="table-container stagger-1" style={{ marginBottom: '1.5rem' }}>
-        <div className="toolbar">
-          <div className="search-bar" style={{ minWidth: '260px' }}>
-            <span className="search-icon">🔍</span>
-            <input
-              type="text"
-              placeholder="Search subscribers, boxes, places..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-
-          <div className="select-wrap">
-            <select className="select-field" value={searchCategory} onChange={e => setSearchCategory(e.target.value)}>
-              <option value="all">Search in: All Fields</option>
-              <option value="name">Name</option>
-              <option value="place">Place</option>
-              <option value="phone">Phone</option>
-              <option value="boxNo">Box MAC / ID</option>
-              <option value="amount">Amount</option>
-            </select>
-          </div>
-
-          <div className="select-wrap">
-            <select className="select-field" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
-              <option value="All">Status: All</option>
-              <option value="Active">🟢 Active Only</option>
-              <option value="Deactive">🔴 Deactive Only</option>
-            </select>
-          </div>
-
-          <div className="select-wrap">
-            <select className="select-field" value={paymentFilter} onChange={e => setPaymentFilter(e.target.value)}>
-              <option value="All">Payment: All</option>
-              <option value="Paid">✅ Paid</option>
-              <option value="Not Paid">⚠️ Not Paid</option>
-            </select>
-          </div>
-
-          <div className="select-wrap">
-            <select className="select-field" value={providerFilter} onChange={e => setProviderFilter(e.target.value)}>
-              <option value="All">Provider: All</option>
-              <option value="TCCL">TCCL</option>
-              <option value="GPTL">GPTL</option>
-            </select>
-          </div>
-
-          {selectedIds.length > 0 && isAdmin && (
-            <div className="toolbar-actions" style={{ marginLeft: 'auto' }}>
-              {selectedIds.length === 1 && (
-                <button className="btn btn-ghost btn-sm" onClick={handleEdit}>
-                  ✏️ Edit
-                </button>
-              )}
-              <button className="btn btn-danger btn-sm" onClick={handleDelete}>
-                🗑️ Delete ({selectedIds.length})
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Data Table */}
+      {/* Main Table Card (Fills height) */}
+      <div className="table-card-fill">
         {loading ? (
-          <div className="spinner-wrap">
-            <div className="spinner"></div>
-            <div className="spinner-text">Fetching live records from Convex & Google Sheets...</div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)' }}>
+            Loading records...
           </div>
         ) : (
-          <div className="table-scroll">
+          <div className="table-scroll-area">
             <table>
               <thead>
                 <tr>
-                  <th style={{ width: '40px', textAlign: 'center' }}>
+                  <th style={{ width: '32px', textAlign: 'center' }}>
                     <input 
                       type="checkbox" 
-                      className="row-checkbox"
                       onChange={(e) => {
                         if (e.target.checked) setSelectedIds(filteredCustomers.map(c => c.id));
                         else setSelectedIds([]);
@@ -426,42 +306,33 @@ export default function Customers() {
                   <th>Total Amount</th>
                   <th>Monthly Rate</th>
                   <th>Payment</th>
-                  <th style={{ textAlign: 'right' }}>Actions</th>
+                  <th style={{ textAlign: 'right' }}>History</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredCustomers.length === 0 ? (
                   <tr>
-                    <td colSpan="12">
-                      <div className="table-empty">
-                        <div className="table-empty-icon">📁</div>
-                        <div className="table-empty-text">No subscriber records found</div>
-                        <div className="table-empty-sub">Try broadening your search query or clear filter settings.</div>
-                      </div>
+                    <td colSpan="12" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
+                      No subscriber records found.
                     </td>
                   </tr>
                 ) : (
-                  filteredCustomers.map((customer, index) => {
+                  filteredCustomers.map(customer => {
                     const isSelected = selectedIds.includes(customer.id);
                     return (
-                      <tr 
-                        key={customer.id} 
-                        className={isSelected ? 'selected-row' : ''} 
-                        style={{ animationDelay: `${index * 0.03}s` }}
-                      >
+                      <tr key={customer.id} className={isSelected ? 'selected-row' : ''}>
                         <td style={{ textAlign: 'center' }}>
                           <input
                             type="checkbox"
-                            className="row-checkbox"
                             checked={isSelected}
                             onChange={() => isAdmin && handleCheckbox(customer.id)}
                             disabled={!isAdmin}
                           />
                         </td>
-                        <td style={{ fontWeight: '600', color: '#fff' }}>{customer.name}</td>
-                        <td style={{ color: 'var(--text-dim)' }}>{customer.place || '—'}</td>
-                        <td style={{ color: 'var(--text-dim)' }}>{customer.phone || '—'}</td>
-                        <td style={{ fontFamily: 'monospace', letterSpacing: '0.05em' }}>{customer.boxNumber}</td>
+                        <td style={{ fontWeight: 600, color: '#fff' }}>{customer.name}</td>
+                        <td>{customer.place || '—'}</td>
+                        <td>{customer.phone || '—'}</td>
+                        <td style={{ fontFamily: 'monospace' }}>{customer.boxNumber}</td>
                         <td>
                           <span className={`badge ${customer.provider?.toLowerCase() === 'tccl' ? 'badge-tccl' : 'badge-gptl'}`}>
                             {(customer.provider || 'tccl').toUpperCase()}
@@ -479,7 +350,8 @@ export default function Customers() {
                         </td>
                         <td>
                           <select
-                            className="cell-select"
+                            className="select-compact"
+                            style={{ padding: '0.2rem 0.4rem', fontSize: '0.75rem' }}
                             value={customer.month || 1}
                             onChange={(e) => isAdmin && handleMonthChange(customer.id, e.target.value)}
                             disabled={!isAdmin}
@@ -490,44 +362,34 @@ export default function Customers() {
                           </select>
                         </td>
                         <td>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                            <span style={{ color: 'var(--text-muted)' }}>₹</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                            <span>₹</span>
                             <input
                               type="number"
-                              className="cell-input"
+                              className="input-compact"
+                              style={{ width: '70px', padding: '0.2rem 0.4rem' }}
                               value={inlineEdits[`${customer.id}-totalAmount`] !== undefined ? inlineEdits[`${customer.id}-totalAmount`] : customer.totalAmount}
                               onChange={(e) => isAdmin && handleInlineChange(customer.id, 'totalAmount', e.target.value)}
                               disabled={!isAdmin}
                             />
                             {isAdmin && inlineEdits[`${customer.id}-totalAmount`] !== undefined && (
-                              <button
-                                className="btn btn-success btn-sm"
-                                style={{ padding: '0.2rem 0.4rem', fontSize: '0.75rem' }}
-                                onClick={() => saveInlineEdit(customer.id, 'totalAmount')}
-                              >
-                                ✓
-                              </button>
+                              <button className="btn btn-success btn-sm" style={{ padding: '0.15rem 0.35rem' }} onClick={() => saveInlineEdit(customer.id, 'totalAmount')}>✓</button>
                             )}
                           </div>
                         </td>
                         <td>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                            <span style={{ color: 'var(--text-muted)' }}>₹</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                            <span>₹</span>
                             <input
                               type="number"
-                              className="cell-input"
+                              className="input-compact"
+                              style={{ width: '70px', padding: '0.2rem 0.4rem' }}
                               value={inlineEdits[`${customer.id}-monthlyPayment`] !== undefined ? inlineEdits[`${customer.id}-monthlyPayment`] : customer.monthlyPayment}
                               onChange={(e) => isAdmin && handleInlineChange(customer.id, 'monthlyPayment', e.target.value)}
                               disabled={!isAdmin}
                             />
                             {isAdmin && inlineEdits[`${customer.id}-monthlyPayment`] !== undefined && (
-                              <button
-                                className="btn btn-success btn-sm"
-                                style={{ padding: '0.2rem 0.4rem', fontSize: '0.75rem' }}
-                                onClick={() => saveInlineEdit(customer.id, 'monthlyPayment')}
-                              >
-                                ✓
-                              </button>
+                              <button className="btn btn-success btn-sm" style={{ padding: '0.15rem 0.35rem' }} onClick={() => saveInlineEdit(customer.id, 'monthlyPayment')}>✓</button>
                             )}
                           </div>
                         </td>
@@ -542,12 +404,7 @@ export default function Customers() {
                           </button>
                         </td>
                         <td style={{ textAlign: 'right' }}>
-                          <button 
-                            className="btn btn-ghost btn-sm" 
-                            onClick={() => fetchHistory(customer)}
-                          >
-                            📜 History
-                          </button>
+                          <button className="btn btn-ghost btn-sm" onClick={() => fetchHistory(customer)}>📜 View</button>
                         </td>
                       </tr>
                     );
@@ -559,162 +416,91 @@ export default function Customers() {
         )}
       </div>
 
-      {/* Customer Form Modal */}
+      {/* Modal */}
       {showModal && (
         <div className="modal-overlay">
           <div className="modal">
             <div className="modal-header">
-              <h3 className="modal-title">{currentCustomer ? 'Edit Customer Information' : 'Add New Subscriber'}</h3>
+              <h3 style={{ fontSize: '1rem' }}>{currentCustomer ? 'Edit Customer' : 'Add New Customer'}</h3>
               <button className="modal-close" onClick={() => setShowModal(false)}>✕</button>
             </div>
-            
             <form onSubmit={handleSave}>
-              <div className="modal-body">
-                {saveError && (
-                  <div className="error-box">
-                    <span>⚠️</span>
-                    <span>{saveError}</span>
-                  </div>
-                )}
-
-                <div className="input-group">
-                  <label className="input-label">Subscriber Full Name</label>
-                  <input 
-                    className="input-field" 
-                    required 
-                    value={formData.name} 
-                    onChange={e => setFormData({ ...formData, name: e.target.value })} 
-                    placeholder="e.g. T Selvan" 
-                  />
+              {saveError && <div style={{ color: '#f87171', fontSize: '0.8rem', marginBottom: '0.5rem' }}>{saveError}</div>}
+              <div className="form-group" style={{ marginBottom: '0.85rem' }}>
+                <label className="form-label">Subscriber Name</label>
+                <input className="input-compact" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">Place</label>
+                  <input className="input-compact" value={formData.place} onChange={e => setFormData({ ...formData, place: e.target.value })} />
                 </div>
-
-                <div className="form-grid">
-                  <div className="input-group">
-                    <label className="input-label">Location / Area</label>
-                    <input 
-                      className="input-field" 
-                      value={formData.place} 
-                      onChange={e => setFormData({ ...formData, place: e.target.value })} 
-                      placeholder="e.g. Sivan Kovil" 
-                    />
-                  </div>
-                  <div className="input-group">
-                    <label className="input-label">Phone Contact</label>
-                    <input 
-                      type="text" 
-                      className="input-field" 
-                      value={formData.phone} 
-                      onChange={e => setFormData({ ...formData, phone: e.target.value })} 
-                      placeholder="Phone number" 
-                    />
-                  </div>
-                </div>
-
-                <div className="form-grid">
-                  <div className="input-group">
-                    <label className="input-label">Box MAC / Number</label>
-                    <input 
-                      type="text" 
-                      className="input-field" 
-                      value={formData.boxNumber} 
-                      onChange={e => setFormData({ ...formData, boxNumber: e.target.value })} 
-                      placeholder="e.g. 3381676912" 
-                    />
-                  </div>
-                  <div className="input-group">
-                    <label className="input-label">Cable Provider</label>
-                    <div className="select-wrap">
-                      <select 
-                        className="select-field" 
-                        value={formData.provider} 
-                        onChange={e => setFormData({ ...formData, provider: e.target.value })}
-                      >
-                        <option value="tccl">TCCL Provider</option>
-                        <option value="gptl">GPTL Provider</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="form-grid">
-                  <div className="input-group">
-                    <label className="input-label">Subscription Status</label>
-                    <div className="select-wrap">
-                      <select 
-                        className="select-field" 
-                        value={formData.status} 
-                        onChange={e => setFormData({ ...formData, status: e.target.value })}
-                      >
-                        <option value="Active">Active</option>
-                        <option value="Deactive">Deactive</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="input-group">
-                    <label className="input-label">Duration (Months)</label>
-                    <div className="select-wrap">
-                      <select
-                        className="select-field"
-                        value={formData.month || 1}
-                        onChange={e => {
-                          const m = parseInt(e.target.value, 10);
-                          const oldM = formData.month || 1;
-                          const currentTotal = formData.totalAmount || 0;
-                          const baseRate = oldM > 0 ? (currentTotal / oldM) : currentTotal;
-                          const calculatedTotal = Math.round(baseRate * m);
-                          setFormData({ ...formData, month: m, totalAmount: calculatedTotal });
-                        }}
-                      >
-                        {[1, 2, 3, 4, 5, 6].map(m => (
-                          <option key={m} value={m}>{m} Month{m > 1 ? 's' : ''}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="form-grid">
-                  <div className="input-group">
-                    <label className="input-label">Total Amount (₹)</label>
-                    <input 
-                      className="input-field" 
-                      type="number" 
-                      step="0.01" 
-                      value={formData.totalAmount} 
-                      onChange={e => setFormData({ ...formData, totalAmount: parseFloat(e.target.value) || 0 })} 
-                    />
-                  </div>
-                  <div className="input-group">
-                    <label className="input-label">Monthly Rate (₹)</label>
-                    <input 
-                      className="input-field" 
-                      type="number" 
-                      step="0.01" 
-                      value={formData.monthlyPayment} 
-                      onChange={e => setFormData({ ...formData, monthlyPayment: parseFloat(e.target.value) || 0 })} 
-                    />
-                  </div>
-                </div>
-
-                <div className="input-group">
-                  <label className="input-label">Current Payment Status</label>
-                  <div className="select-wrap">
-                    <select 
-                      className="select-field" 
-                      value={formData.paid} 
-                      onChange={e => setFormData({ ...formData, paid: e.target.value })}
-                    >
-                      <option value="Not Paid">Not Paid</option>
-                      <option value="Paid">Paid</option>
-                    </select>
-                  </div>
+                <div className="form-group">
+                  <label className="form-label">Phone</label>
+                  <input className="input-compact" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
                 </div>
               </div>
-
-              <div className="modal-footer">
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">Box MAC / Number</label>
+                  <input className="input-compact" value={formData.boxNumber} onChange={e => setFormData({ ...formData, boxNumber: e.target.value })} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Provider</label>
+                  <select className="select-compact" value={formData.provider} onChange={e => setFormData({ ...formData, provider: e.target.value })}>
+                    <option value="tccl">TCCL</option>
+                    <option value="gptl">GPTL</option>
+                  </select>
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">Status</label>
+                  <select className="select-compact" value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value })}>
+                    <option value="Active">Active</option>
+                    <option value="Deactive">Deactive</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Month (1 - 6)</label>
+                  <select
+                    className="select-compact"
+                    value={formData.month || 1}
+                    onChange={e => {
+                      const m = parseInt(e.target.value, 10);
+                      const oldM = formData.month || 1;
+                      const currentTotal = formData.totalAmount || 0;
+                      const baseRate = oldM > 0 ? (currentTotal / oldM) : currentTotal;
+                      const calculatedTotal = Math.round(baseRate * m);
+                      setFormData({ ...formData, month: m, totalAmount: calculatedTotal });
+                    }}
+                  >
+                    {[1, 2, 3, 4, 5, 6].map(m => (
+                      <option key={m} value={m}>{m} Month{m > 1 ? 's' : ''}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">Total Amount (₹)</label>
+                  <input className="input-compact" type="number" step="0.01" value={formData.totalAmount} onChange={e => setFormData({ ...formData, totalAmount: parseFloat(e.target.value) || 0 })} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Monthly Rate (₹)</label>
+                  <input className="input-compact" type="number" step="0.01" value={formData.monthlyPayment} onChange={e => setFormData({ ...formData, monthlyPayment: parseFloat(e.target.value) || 0 })} />
+                </div>
+              </div>
+              <div className="form-group" style={{ marginBottom: '1rem' }}>
+                <label className="form-label">Payment Status</label>
+                <select className="select-compact" value={formData.paid} onChange={e => setFormData({ ...formData, paid: e.target.value })}>
+                  <option value="Not Paid">Not Paid</option>
+                  <option value="Paid">Paid</option>
+                </select>
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                 <button type="button" className="btn btn-ghost" onClick={() => setShowModal(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">{currentCustomer ? 'Update Subscriber' : 'Create Subscriber'}</button>
+                <button type="submit" className="btn btn-primary">{currentCustomer ? 'Update' : 'Create'}</button>
               </div>
             </form>
           </div>
@@ -724,41 +510,25 @@ export default function Customers() {
       {/* History Modal */}
       {showHistoryModal && (
         <div className="modal-overlay">
-          <div className="modal" style={{ maxWidth: '580px' }}>
+          <div className="modal" style={{ maxWidth: '450px' }}>
             <div className="modal-header">
-              <h3 className="modal-title">Payment History: <span className="text-gradient">{currentCustomer?.name}</span></h3>
+              <h3 style={{ fontSize: '1rem' }}>History: {currentCustomer?.name}</h3>
               <button className="modal-close" onClick={() => setShowHistoryModal(false)}>✕</button>
             </div>
-
-            <div className="modal-body">
-              {customerHistory.length > 0 ? (
-                <div>
-                  {customerHistory.map((h, i) => (
-                    <div key={i} className="history-entry">
-                      <div className="history-dot"></div>
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>Payment Recorded</div>
-                        <div className="history-date">
-                          {new Date(h.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                        </div>
-                      </div>
-                      <div className="history-amount">₹{h.amount}</div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div style={{ textAlign: 'center', padding: '3rem 1rem' }}>
-                  <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem', opacity: 0.4 }}>📜</div>
-                  <p style={{ color: 'var(--text-muted)' }}>No historical payment records found for this subscriber.</p>
-                </div>
-              )}
-            </div>
-
-            <div className="modal-footer">
-              {customerHistory.length > 0 && (
-                <button className="btn btn-ghost" onClick={exportHistory}>📥 Export CSV</button>
-              )}
-              <button className="btn btn-primary" onClick={() => setShowHistoryModal(false)}>Close</button>
+            {customerHistory.length > 0 ? (
+              <div style={{ maxHeight: '250px', overflowY: 'auto' }}>
+                {customerHistory.map((h, i) => (
+                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.8rem' }}>
+                    <span>{new Date(h.date).toLocaleDateString()}</span>
+                    <strong style={{ color: '#34d399' }}>₹{h.amount}</strong>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No payment history recorded.</p>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
+              <button className="btn btn-primary btn-sm" onClick={() => setShowHistoryModal(false)}>Close</button>
             </div>
           </div>
         </div>
