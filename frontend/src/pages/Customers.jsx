@@ -326,7 +326,7 @@ export default function Customers() {
                       disabled={!isAdmin} 
                     />
                   </th>
-                  <th style={{ width: '135px', textAlign: 'center' }}># Pos</th>
+                  <th style={{ width: '100px', textAlign: 'center' }}># Pos</th>
                   <th>Subscriber Name</th>
                   <th>Place</th>
                   <th>Phone Number</th>
@@ -420,16 +420,6 @@ export default function Customers() {
                                   ▼
                                 </button>
                               </div>
-                            )}
-                            {isAdmin && !isFirst && (
-                              <button
-                                className="btn btn-ghost btn-sm"
-                                style={{ padding: '0.15rem 0.3rem', fontSize: '0.75rem', color: '#60a5fa' }}
-                                onClick={() => handleMoveRow(customer.id, 0)}
-                                title="Jump to Row 1 (Top)"
-                              >
-                                🔝
-                              </button>
                             )}
                           </div>
                         </td>
