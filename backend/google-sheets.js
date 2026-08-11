@@ -1,5 +1,6 @@
 import { GoogleSpreadsheet } from 'google-spreadsheet';
 import { JWT } from 'google-auth-library';
+import dotenv from 'dotenv';
 import { syncAddCustomer, syncUpdateCustomer, syncDeleteCustomer, syncAddHistoryEntry, syncMonthlyReset, syncReorderCustomers } from './convex-sync.js';
 dotenv.config();
 
