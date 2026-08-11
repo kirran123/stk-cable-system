@@ -26,8 +26,34 @@ const sendToBackend = async (endpoint, method = 'POST', body = null) => {
   return null;
 };
 
+// Helper to sort customers according to stored custom row order
+const applyStoredOrder = (customers) => {
+  if (!Array.isArray(customers) || customers.length === 0) return customers;
+  try {
+    const storedOrderRaw = localStorage.getItem('stk_customer_order');
+    if (storedOrderRaw) {
+      const storedOrder = JSON.parse(storedOrderRaw);
+      if (Array.isArray(storedOrder) && storedOrder.length > 0) {
+        const orderMap = new Map();
+        storedOrder.forEach((id, idx) => orderMap.set(String(id), idx));
+
+        return [...customers].sort((a, b) => {
+          const posA = orderMap.has(String(a.id)) ? orderMap.get(String(a.id)) : (a.order !== undefined ? a.order : Number.MAX_SAFE_INTEGER);
+          const posB = orderMap.has(String(b.id)) ? orderMap.get(String(b.id)) : (b.order !== undefined ? b.order : Number.MAX_SAFE_INTEGER);
+          return posA - posB;
+        });
+      }
+    }
+  } catch (e) {
+    console.warn('[API] Failed to apply stored order:', e);
+  }
+  return customers;
+};
+
 // 1. Fetch all 70+ customers in real-time
 export const fetchCustomersData = async () => {
+  let list = [];
+
   // Primary: High-speed Convex Query
   try {
     const res = await fetch(`${CONVEX_URL}/api/query`, {
@@ -38,7 +64,7 @@ export const fetchCustomersData = async () => {
     if (res.ok) {
       const data = await res.json();
       if (data && data.status === 'success' && Array.isArray(data.value) && data.value.length > 0) {
-        return data.value;
+        list = data.value;
       }
     }
   } catch (err) {
@@ -46,17 +72,19 @@ export const fetchCustomersData = async () => {
   }
 
   // Secondary: Backend fallback
-  try {
-    const res = await sendToBackend('/customers', 'GET');
-    if (res && res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data)) return data;
+  if (list.length === 0) {
+    try {
+      const res = await sendToBackend('/customers', 'GET');
+      if (res && res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) list = data;
+      }
+    } catch (e) {
+      console.warn('[API] Backend fetch failed.', e);
     }
-  } catch (e) {
-    console.warn('[API] Backend fetch failed.', e);
   }
 
-  return [];
+  return applyStoredOrder(list);
 };
 
 // 2. Save / Update customer fields
@@ -169,6 +197,12 @@ export const fetchCustomerHistoryApi = async (customerId) => {
 export const reorderCustomersApi = async (orderedIds) => {
   const ids = orderedIds.map(String);
 
+  // 1. Persist new row order locally in browser
+  try {
+    localStorage.setItem('stk_customer_order', JSON.stringify(ids));
+  } catch (e) {}
+
+  // 2. Try Convex Cloud DB
   try {
     await fetch(`${CONVEX_URL}/api/mutation`, {
       method: 'POST',
@@ -182,6 +216,6 @@ export const reorderCustomersApi = async (orderedIds) => {
     console.error('[API] Convex reorder failed:', e);
   }
 
-  // Dual sync to Node Backend to immediately reorder physical rows in Google Sheets
+  // 3. Dual sync to Node Backend to immediately reorder physical rows in Google Sheets
   await sendToBackend('/customers/reorder', 'POST', { orderedIds: ids });
 };
