@@ -6,7 +6,8 @@ import {
   addCustomerApi, 
   deleteCustomerApi, 
   triggerMonthlyResetApi, 
-  fetchCustomerHistoryApi 
+  fetchCustomerHistoryApi,
+  reorderCustomersApi
 } from '../apiConfig';
 
 export default function Customers() {
@@ -23,7 +24,57 @@ export default function Customers() {
   const [selectedIds, setSelectedIds] = useState([]);
 
   const [inlineEdits, setInlineEdits] = useState({});
+  const [posEdits, setPosEdits] = useState({});
+  const [draggedId, setDraggedId] = useState(null);
   const [saveError, setSaveError] = useState('');
+
+  const handleMoveRow = async (customerId, targetIndex) => {
+    if (targetIndex < 0 || targetIndex >= customers.length) return;
+    const currentIndex = customers.findIndex(c => c.id === customerId);
+    if (currentIndex === -1 || currentIndex === targetIndex) return;
+
+    const newCustomers = [...customers];
+    const [movedCustomer] = newCustomers.splice(currentIndex, 1);
+    newCustomers.splice(targetIndex, 0, movedCustomer);
+
+    setCustomers(newCustomers);
+    const orderedIds = newCustomers.map(c => c.id);
+    await reorderCustomersApi(orderedIds);
+  };
+
+  const handlePositionSubmit = async (customerId) => {
+    const rawVal = posEdits[customerId];
+    if (rawVal === undefined) return;
+    const parsedPos = parseInt(rawVal, 10);
+    setPosEdits(prev => {
+      const next = { ...prev };
+      delete next[customerId];
+      return next;
+    });
+    if (isNaN(parsedPos) || parsedPos < 1) return;
+    const targetIndex = Math.min(Math.max(0, parsedPos - 1), customers.length - 1);
+    await handleMoveRow(customerId, targetIndex);
+  };
+
+  const handleDragStart = (e, id) => {
+    setDraggedId(id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = async (e, targetId) => {
+    e.preventDefault();
+    if (!draggedId || draggedId === targetId) return;
+    const targetIndex = customers.findIndex(c => c.id === targetId);
+    if (targetIndex !== -1) {
+      await handleMoveRow(draggedId, targetIndex);
+    }
+    setDraggedId(null);
+  };
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -275,6 +326,7 @@ export default function Customers() {
                       disabled={!isAdmin} 
                     />
                   </th>
+                  <th style={{ width: '135px', textAlign: 'center' }}># Pos</th>
                   <th>Subscriber Name</th>
                   <th>Place</th>
                   <th>Phone Number</th>
@@ -291,15 +343,27 @@ export default function Customers() {
               <tbody>
                 {filteredCustomers.length === 0 ? (
                   <tr>
-                    <td colSpan="12" style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-muted)' }}>
+                    <td colSpan="13" style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-muted)' }}>
                       No subscriber records found matching your filters.
                     </td>
                   </tr>
                 ) : (
                   filteredCustomers.map(customer => {
                     const isSelected = selectedIds.includes(customer.id);
+                    const actualIndex = customers.findIndex(c => c.id === customer.id);
+                    const posNum = actualIndex + 1;
+                    const isFirst = actualIndex === 0;
+                    const isLast = actualIndex === customers.length - 1;
+
                     return (
-                      <tr key={customer.id} className={isSelected ? 'selected-row' : ''}>
+                      <tr 
+                        key={customer.id} 
+                        className={isSelected ? 'selected-row' : ''}
+                        draggable={isAdmin}
+                        onDragStart={(e) => isAdmin && handleDragStart(e, customer.id)}
+                        onDragOver={(e) => isAdmin && handleDragOver(e)}
+                        onDrop={(e) => isAdmin && handleDrop(e, customer.id)}
+                      >
                         <td style={{ textAlign: 'center' }}>
                           <input
                             type="checkbox"
@@ -307,6 +371,67 @@ export default function Customers() {
                             onChange={() => isAdmin && handleCheckbox(customer.id)}
                             disabled={!isAdmin}
                           />
+                        </td>
+
+                        {/* Position Number & Easy Reorder Controls */}
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', justifyContent: 'center' }}>
+                            {isAdmin && (
+                              <span style={{ cursor: 'grab', color: 'var(--text-muted)', fontSize: '0.85rem', userSelect: 'none', marginRight: '2px' }} title="Drag & drop row">
+                                ☰
+                              </span>
+                            )}
+                            <input
+                              type="number"
+                              min="1"
+                              max={customers.length}
+                              className="input-neat"
+                              style={{ width: '48px', padding: '0.2rem 0.3rem', textAlign: 'center', fontSize: '0.82rem', fontWeight: 'bold' }}
+                              value={posEdits[customer.id] !== undefined ? posEdits[customer.id] : posNum}
+                              onChange={(e) => isAdmin && setPosEdits({ ...posEdits, [customer.id]: e.target.value })}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && isAdmin) handlePositionSubmit(customer.id);
+                              }}
+                              onBlur={() => isAdmin && handlePositionSubmit(customer.id)}
+                              disabled={!isAdmin}
+                              title="Type target position (e.g. 1) & press Enter"
+                            />
+                            {isAdmin && posEdits[customer.id] !== undefined && posEdits[customer.id] !== String(posNum) && (
+                              <button className="btn btn-success btn-sm" style={{ padding: '0.15rem 0.35rem', fontSize: '0.75rem' }} onClick={() => handlePositionSubmit(customer.id)}>✓</button>
+                            )}
+                            {isAdmin && (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                                <button
+                                  className="btn btn-ghost btn-sm"
+                                  style={{ padding: '0 0.25rem', fontSize: '0.65rem', lineHeight: '1' }}
+                                  onClick={() => handleMoveRow(customer.id, actualIndex - 1)}
+                                  disabled={isFirst}
+                                  title="Move Up 1 Row"
+                                >
+                                  ▲
+                                </button>
+                                <button
+                                  className="btn btn-ghost btn-sm"
+                                  style={{ padding: '0 0.25rem', fontSize: '0.65rem', lineHeight: '1' }}
+                                  onClick={() => handleMoveRow(customer.id, actualIndex + 1)}
+                                  disabled={isLast}
+                                  title="Move Down 1 Row"
+                                >
+                                  ▼
+                                </button>
+                              </div>
+                            )}
+                            {isAdmin && !isFirst && (
+                              <button
+                                className="btn btn-ghost btn-sm"
+                                style={{ padding: '0.15rem 0.3rem', fontSize: '0.75rem', color: '#60a5fa' }}
+                                onClick={() => handleMoveRow(customer.id, 0)}
+                                title="Jump to Row 1 (Top)"
+                              >
+                                🔝
+                              </button>
+                            )}
+                          </div>
                         </td>
                         <td style={{ fontWeight: 600, color: '#fff' }}>{customer.name}</td>
                         <td>{customer.place || '—'}</td>

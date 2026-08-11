@@ -1,7 +1,6 @@
 import { GoogleSpreadsheet } from 'google-spreadsheet';
 import { JWT } from 'google-auth-library';
-import dotenv from 'dotenv';
-import { syncAddCustomer, syncUpdateCustomer, syncDeleteCustomer, syncAddHistoryEntry, syncMonthlyReset } from './convex-sync.js';
+import { syncAddCustomer, syncUpdateCustomer, syncDeleteCustomer, syncAddHistoryEntry, syncMonthlyReset, syncReorderCustomers } from './convex-sync.js';
 dotenv.config();
 
 // Define credentials
@@ -337,4 +336,66 @@ export const executeMonthlyReset = async () => {
   } catch (e) {
     console.error('Error in executeMonthlyReset:', e);
   }
-}
+};
+
+// 5. Reorder customers
+export const reorderCustomers = async (orderedIds) => {
+  try {
+    const sheet = await initSheet();
+    if (!sheet) throw new Error('Sheet not initialized');
+
+    const rows = await sheet.getRows();
+    const rowMap = new Map();
+    rows.forEach(r => rowMap.set(String(r.get('id')), r));
+
+    const orderedRowObjects = [];
+    for (const id of orderedIds) {
+      const r = rowMap.get(String(id));
+      if (r) {
+        orderedRowObjects.push({
+          id: r.get('id') || '',
+          name: r.get('name') || '',
+          place: r.get('place') || '',
+          phone: r.get('phone') || '',
+          boxNumber: r.get('boxNumber') || '',
+          provider: r.get('provider') || 'tccl',
+          status: r.get('status') || 'Active',
+          month: r.get('month') || '1',
+          totalAmount: r.get('totalAmount') || 0,
+          monthlyPayment: r.get('monthlyPayment') || 0,
+          paid: r.get('paid') || 'Not Paid'
+        });
+      }
+    }
+
+    // Append any rows not included in orderedIds
+    rows.forEach(r => {
+      const id = String(r.get('id'));
+      if (!orderedIds.map(String).includes(id)) {
+        orderedRowObjects.push({
+          id: r.get('id') || '',
+          name: r.get('name') || '',
+          place: r.get('place') || '',
+          phone: r.get('phone') || '',
+          boxNumber: r.get('boxNumber') || '',
+          provider: r.get('provider') || 'tccl',
+          status: r.get('status') || 'Active',
+          month: r.get('month') || '1',
+          totalAmount: r.get('totalAmount') || 0,
+          monthlyPayment: r.get('monthlyPayment') || 0,
+          paid: r.get('paid') || 'Not Paid'
+        });
+      }
+    });
+
+    await sheet.clearRows();
+    await sheet.addRows(orderedRowObjects, { raw: true });
+
+    // Dual sync to Convex
+    await syncReorderCustomers(orderedIds);
+    return true;
+  } catch (error) {
+    console.error('Error in reorderCustomers:', error);
+    throw error;
+  }
+};

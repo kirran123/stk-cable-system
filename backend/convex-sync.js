@@ -97,6 +97,16 @@ export const syncMonthlyReset = async () => {
   }
 };
 
+export const syncReorderCustomers = async (orderedIds) => {
+  if (!client) return null;
+  try {
+    return await client.mutation("customers:reorder", { orderedIds: orderedIds.map(String) });
+  } catch (err) {
+    console.error("[ConvexSync] Error reordering customers in Convex:", err.message);
+    return null;
+  }
+};
+
 export const getConvexCustomers = async () => {
   if (!client) return null;
   try {

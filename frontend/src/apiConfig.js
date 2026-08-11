@@ -175,3 +175,31 @@ export const fetchCustomerHistoryApi = async (customerId) => {
 
   return [];
 };
+
+// 7. Reorder customers
+export const reorderCustomersApi = async (orderedIds) => {
+  const ids = orderedIds.map(String);
+  try {
+    const res = await fetch(`${CONVEX_URL}/api/mutation`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        path: 'customers:reorder',
+        args: { orderedIds: ids }
+      })
+    });
+    if (res.ok) await res.json();
+  } catch (e) {
+    console.error('[API] Convex reorder failed:', e);
+  }
+
+  if (isLocalHost()) {
+    try {
+      await fetch(`${LOCAL_API}/customers/reorder`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderedIds: ids })
+      });
+    } catch (e) {}
+  }
+};

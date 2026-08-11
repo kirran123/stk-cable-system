@@ -14,6 +14,7 @@ export default defineSchema({
     totalAmount: v.number(),
     monthlyPayment: v.number(),
     paid: v.string(),
+    order: v.optional(v.number()),
     updatedAt: v.optional(v.string()),
   }).index("by_custom_id", ["id"]),
 

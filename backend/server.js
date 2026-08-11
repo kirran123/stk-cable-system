@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { getCustomers, addCustomer, updateCustomer, deleteCustomer, executeMonthlyReset, getCustomerHistory } from './google-sheets.js';
+import { getCustomers, addCustomer, updateCustomer, deleteCustomer, executeMonthlyReset, getCustomerHistory, reorderCustomers } from './google-sheets.js';
 import './cron-job.js'; // Initialize cron job
 
 dotenv.config();
@@ -13,6 +13,21 @@ app.use(cors());
 app.use(express.json());
 
 // API Routes
+
+// Reorder customers
+app.post('/api/customers/reorder', async (req, res) => {
+  try {
+    const { orderedIds } = req.body;
+    if (!Array.isArray(orderedIds)) {
+      return res.status(400).json({ error: 'orderedIds must be an array' });
+    }
+    await reorderCustomers(orderedIds);
+    res.json({ message: 'Customers reordered successfully' });
+  } catch (error) {
+    console.error('Error reordering customers:', error);
+    res.status(500).json({ error: 'Failed to reorder customers' });
+  }
+});
 
 // Get all customers
 app.get('/api/customers', async (req, res) => {
